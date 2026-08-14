@@ -49,7 +49,20 @@ public class ServiceCategoriesController : ControllerBase
             new { id = category.Id },
             category);
     }
+    // PUT: api/ServiceCategories/{id}
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<ServiceCategoryDto>> Update(
+        Guid id,
+        UpdateServiceCategoryDto dto)
+    {
+        var category =
+            await _serviceCategoryService.UpdateAsync(id, dto);
 
+        if (category == null)
+            return NotFound();
+
+        return Ok(category);
+    }
     // DELETE: api/ServiceCategories/{id}
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)

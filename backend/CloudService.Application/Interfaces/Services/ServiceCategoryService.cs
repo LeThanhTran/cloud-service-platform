@@ -74,7 +74,36 @@ public class ServiceCategoryService : IServiceCategoryService
             IsActive = category.IsActive
         };
     }
+    public async Task<ServiceCategoryDto?> UpdateAsync(
+    Guid id,
+    UpdateServiceCategoryDto dto)
+    {
+        var repository =
+            _unitOfWork.Repository<ServiceCategory>();
 
+        var category = await repository.GetByIdAsync(id);
+
+        if (category == null)
+            return null;
+
+        category.Name = dto.Name;
+        category.Description = dto.Description;
+        category.Slug = dto.Slug;
+        category.IsActive = dto.IsActive;
+
+        repository.Update(category);
+
+        await _unitOfWork.SaveChangesAsync();
+
+        return new ServiceCategoryDto
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Description = category.Description,
+            Slug = category.Slug,
+            IsActive = category.IsActive
+        };
+    }
     public async Task<bool> DeleteAsync(Guid id)
     {
         var repository =

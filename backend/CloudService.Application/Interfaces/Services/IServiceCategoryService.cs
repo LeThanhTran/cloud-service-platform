@@ -10,5 +10,9 @@ public interface IServiceCategoryService
 
     Task<ServiceCategoryDto> CreateAsync(CreateServiceCategoryDto dto);
 
+    Task<ServiceCategoryDto?> UpdateAsync(
+        Guid id,
+        UpdateServiceCategoryDto dto);
+
     Task<bool> DeleteAsync(Guid id);
 }

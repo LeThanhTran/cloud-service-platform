@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CloudService.Application.DTOs.ServiceCategories;
 
-public class CreateServiceCategoryDto
+public class UpdateServiceCategoryDto
 {
     [Required(ErrorMessage = "Tên danh mục không được để trống.")]
     [StringLength(100, ErrorMessage = "Tên danh mục tối đa 100 ký tự.")]
@@ -13,4 +13,6 @@ public class CreateServiceCategoryDto
 
     [StringLength(150, ErrorMessage = "Slug tối đa 150 ký tự.")]
     public string? Slug { get; set; }
+
+    public bool IsActive { get; set; }
 }
