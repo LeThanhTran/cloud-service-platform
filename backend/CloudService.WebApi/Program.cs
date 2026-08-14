@@ -1,10 +1,14 @@
+using CloudService.Application.Interfaces;
+using CloudService.Application.Interfaces.Repositories;
 using CloudService.Infrastructure.Data;
+using CloudService.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using CloudService.Application.Interfaces.Services;
+using CloudService.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -16,10 +20,17 @@ builder.Services.AddDbContext<CloudServiceDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Repository Pattern
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+// Unit of Work Pattern
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// Application Services
+builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
