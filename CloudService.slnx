@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="backend/CloudService.Application/CloudService.Application.csproj" />
+    <Project Path="backend/CloudService.Domain/CloudService.Domain.csproj" />
+    <Project Path="backend/CloudService.Infrastructure/CloudService.Infrastructure.csproj" />
+    <Project Path="backend/CloudService.Tests/CloudService.Tests.csproj" />
+    <Project Path="backend/CloudService.WebApi/CloudService.WebApi.csproj" />
+  </Folder>
+</Solution>
