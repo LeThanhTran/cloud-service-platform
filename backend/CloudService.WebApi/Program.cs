@@ -28,6 +28,9 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Application Services
 builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
+builder.Services.AddScoped<IServicePlanService, ServicePlanService>();
+builder.Services.AddScoped<IPlanPriceService, PlanPriceService>();
+builder.Services.AddScoped<IPromotionService, PromotionService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
