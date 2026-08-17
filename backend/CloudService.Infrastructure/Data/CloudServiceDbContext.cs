@@ -19,6 +19,8 @@ public class CloudServiceDbContext : DbContext
 
     public DbSet<Promotion> Promotions => Set<Promotion>();
 
+    public DbSet<AppUser> AppUsers { get; set; }
+
     public DbSet<NewsArticle> NewsArticles => Set<NewsArticle>();
 
     public DbSet<OrderRequest> OrderRequests => Set<OrderRequest>();
@@ -39,5 +41,26 @@ public class CloudServiceDbContext : DbContext
         modelBuilder.Entity<Promotion>()
             .Property(x => x.DiscountPercent)
             .HasPrecision(5, 2);
+
+        modelBuilder.Entity<AppUser>(entity =>
+        {
+            entity.HasIndex(x => x.Email)
+                .IsUnique();
+
+            entity.Property(x => x.FullName)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(x => x.Email)
+                .HasMaxLength(150)
+                .IsRequired();
+
+            entity.Property(x => x.PasswordHash)
+                .IsRequired();
+
+            entity.Property(x => x.Role)
+                .HasMaxLength(50)
+                .IsRequired();
+        });
     }
 }
