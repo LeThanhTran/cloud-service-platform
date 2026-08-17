@@ -7,17 +7,23 @@ namespace CloudService.Application.Interfaces.Services;
 public class ServicePlanService : IServicePlanService
 {
     private readonly IRepository<ServicePlan> _repository;
+    private readonly IRepository<ServiceCategory> _serviceCategoryRepository;
     private readonly IUnitOfWork _unitOfWork;
 
-    public ServicePlanService(IRepository<ServicePlan> repository, IUnitOfWork unitOfWork)
+    public ServicePlanService(
+        IRepository<ServicePlan> repository,
+        IRepository<ServiceCategory> serviceCategoryRepository,
+        IUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _serviceCategoryRepository = serviceCategoryRepository;
         _unitOfWork = unitOfWork;
     }
 
     public async Task<IEnumerable<ServicePlanDto>> GetAllAsync()
     {
         var list = await _repository.GetAllAsync();
+
         return list.Select(p => new ServicePlanDto
         {
             Id = p.Id,
@@ -36,7 +42,9 @@ public class ServicePlanService : IServicePlanService
     public async Task<ServicePlanDto?> GetByIdAsync(Guid id)
     {
         var plan = await _repository.GetByIdAsync(id);
-        if (plan == null) return null;
+
+        if (plan == null)
+            return null;
 
         return new ServicePlanDto
         {
@@ -55,6 +63,15 @@ public class ServicePlanService : IServicePlanService
 
     public async Task<ServicePlanDto> CreateAsync(CreateServicePlanDto dto)
     {
+        if (dto.ServiceCategoryId == Guid.Empty)
+            throw new ArgumentException("ServiceCategoryId không hợp lệ.");
+
+        var serviceCategory =
+            await _serviceCategoryRepository.GetByIdAsync(dto.ServiceCategoryId);
+
+        if (serviceCategory == null)
+            throw new KeyNotFoundException("Không tìm thấy Service Category.");
+
         var entity = new ServicePlan
         {
             Name = dto.Name,
@@ -89,7 +106,18 @@ public class ServicePlanService : IServicePlanService
     public async Task<bool> UpdateAsync(Guid id, UpdateServicePlanDto dto)
     {
         var entity = await _repository.GetByIdAsync(id);
-        if (entity == null) return false;
+
+        if (entity == null)
+            return false;
+
+        if (dto.ServiceCategoryId == Guid.Empty)
+            throw new ArgumentException("ServiceCategoryId không hợp lệ.");
+
+        var serviceCategory =
+            await _serviceCategoryRepository.GetByIdAsync(dto.ServiceCategoryId);
+
+        if (serviceCategory == null)
+            throw new KeyNotFoundException("Không tìm thấy Service Category.");
 
         entity.Name = dto.Name;
         entity.Description = dto.Description;
@@ -102,15 +130,19 @@ public class ServicePlanService : IServicePlanService
         entity.ServiceCategoryId = dto.ServiceCategoryId;
 
         _repository.Update(entity);
+
         return await _unitOfWork.SaveChangesAsync() > 0;
     }
 
     public async Task<bool> DeleteAsync(Guid id)
     {
         var entity = await _repository.GetByIdAsync(id);
-        if (entity == null) return false;
+
+        if (entity == null)
+            return false;
 
         _repository.Delete(entity);
+
         return await _unitOfWork.SaveChangesAsync() > 0;
     }
 }
