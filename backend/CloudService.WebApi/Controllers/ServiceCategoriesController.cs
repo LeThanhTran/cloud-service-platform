@@ -1,5 +1,6 @@
 using CloudService.Application.DTOs.ServiceCategories;
 using CloudService.Application.Interfaces.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CloudService.WebApi.Controllers;
@@ -18,6 +19,7 @@ public class ServiceCategoriesController : ControllerBase
 
     // GET: api/ServiceCategories
     [HttpGet]
+    [Authorize]
     public async Task<ActionResult<IEnumerable<ServiceCategoryDto>>> GetAll()
     {
         var categories = await _serviceCategoryService.GetAllAsync();
@@ -49,6 +51,7 @@ public class ServiceCategoriesController : ControllerBase
             new { id = category.Id },
             category);
     }
+
     // PUT: api/ServiceCategories/{id}
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<ServiceCategoryDto>> Update(
@@ -63,6 +66,7 @@ public class ServiceCategoriesController : ControllerBase
 
         return Ok(category);
     }
+
     // DELETE: api/ServiceCategories/{id}
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
