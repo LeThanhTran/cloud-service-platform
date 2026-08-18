@@ -27,7 +27,7 @@ public class ServicePlansController : ControllerBase
 
     // GET: api/ServicePlans
     [HttpGet]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAll()
     {
         var result = await _service.GetAllAsync();
@@ -36,7 +36,7 @@ public class ServicePlansController : ControllerBase
 
     // GET: api/ServicePlans/{id}
     [HttpGet("{id:guid}")]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await _service.GetByIdAsync(id);
