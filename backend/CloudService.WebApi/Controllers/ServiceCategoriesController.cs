@@ -29,6 +29,7 @@ public class ServiceCategoriesController : ControllerBase
 
     // GET: api/ServiceCategories/{id}
     [HttpGet("{id:guid}")]
+    [Authorize]
     public async Task<ActionResult<ServiceCategoryDto>> GetById(Guid id)
     {
         var category = await _serviceCategoryService.GetByIdAsync(id);
@@ -41,6 +42,7 @@ public class ServiceCategoriesController : ControllerBase
 
     // POST: api/ServiceCategories
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ServiceCategoryDto>> Create(
         CreateServiceCategoryDto dto)
     {
@@ -54,6 +56,7 @@ public class ServiceCategoriesController : ControllerBase
 
     // PUT: api/ServiceCategories/{id}
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ServiceCategoryDto>> Update(
         Guid id,
         UpdateServiceCategoryDto dto)
@@ -69,6 +72,7 @@ public class ServiceCategoriesController : ControllerBase
 
     // DELETE: api/ServiceCategories/{id}
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var deleted = await _serviceCategoryService.DeleteAsync(id);
