@@ -1,11 +1,13 @@
 using CloudService.Application.Interfaces;
 using CloudService.Application.Interfaces.Repositories;
+using CloudService.Application.Interfaces.QrCodes;
 using CloudService.Application.Interfaces.Services;
 using CloudService.Application.Services;
 using CloudService.Domain.Entities;
 using CloudService.Infrastructure.Data;
 using CloudService.Infrastructure.Repositories;
 using CloudService.WebApi.Services;
+using CloudService.WebApi.Services.QrCodes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -65,6 +67,7 @@ builder.Services.AddScoped<IServicePlanService, ServicePlanService>();
 builder.Services.AddScoped<IPlanPriceService, PlanPriceService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
+builder.Services.AddSingleton<IQrCodeGeneratorFactory, QrCodeGeneratorFactory>();
 
 // Authentication Services
 builder.Services.AddScoped<IAuthService, AuthService>();
