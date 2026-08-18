@@ -21,6 +21,22 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
+// CORS cho phép frontend Next.js gọi Web API từ trình duyệt.
+var frontendBaseUrl =
+    (builder.Configuration["Frontend:BaseUrl"] ?? "http://localhost:3000")
+    .TrimEnd('/');
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .WithOrigins(frontendBaseUrl)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 // Chuẩn hóa response lỗi theo RFC 7807 ProblemDetails.
 builder.Services.AddProblemDetails(options =>
 {
@@ -141,6 +157,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// CORS phải chạy trước Authentication/Authorization để frontend nhận
+// được CORS headers kể cả khi API trả về 401/403.
+app.UseCors("Frontend");
 
 // Authentication phải đứng trước Authorization
 app.UseAuthentication();
