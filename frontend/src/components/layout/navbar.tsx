@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { LayoutDashboard, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Brand } from "@/components/ui/brand";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
+import { useAuth } from "@/components/auth/auth-provider";
 
 const navigation = [
   { label: "Trang chủ", href: "/" },
@@ -18,6 +19,8 @@ const navigation = [
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const { session, ready } = useAuth();
+  const canManage = ready && session && ["Admin", "Editor"].includes(session.role);
 
   return (
     <header className="sticky top-0 z-50 border-b border-line/80 bg-white/96 backdrop-blur-md">
@@ -42,9 +45,15 @@ export function Navbar() {
         </nav>
 
         <div className="hidden lg:block">
-          <ButtonLink href="/admin/login" className="h-10 rounded-[10px] px-4 text-[12px]">
-            Đăng nhập
-          </ButtonLink>
+          {canManage ? (
+            <ButtonLink href="/admin/dashboard" className="h-10 gap-2 rounded-[10px] px-4 text-[12px]">
+              <LayoutDashboard className="size-4" /> Quản trị
+            </ButtonLink>
+          ) : (
+            <ButtonLink href="/admin/login" className="h-10 rounded-[10px] px-4 text-[12px]">
+              Đăng nhập
+            </ButtonLink>
+          )}
         </div>
 
         <button
@@ -71,8 +80,12 @@ export function Navbar() {
                 {item.label}
               </Link>
             ))}
-            <ButtonLink href="/admin/login" className="mt-3 w-full">
-              Đăng nhập
+            <ButtonLink
+              href={canManage ? "/admin/dashboard" : "/admin/login"}
+              className="mt-3 w-full gap-2"
+            >
+              {canManage && <LayoutDashboard className="size-4" />}
+              {canManage ? "Quản trị" : "Đăng nhập"}
             </ButtonLink>
           </Container>
         </div>
