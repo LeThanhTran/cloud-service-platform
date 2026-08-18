@@ -13,4 +13,9 @@ public class AppUser : BaseEntity
     public string Role { get; set; } = "User";
 
     public bool IsActive { get; set; } = true;
+
+    // Refresh Token
+    public string? RefreshToken { get; set; }
+
+    public DateTime? RefreshTokenExpiryTime { get; set; }
 }
