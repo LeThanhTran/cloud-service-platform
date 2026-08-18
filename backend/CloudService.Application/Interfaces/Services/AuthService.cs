@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using CloudService.Application.DTOs.Auth;
 using CloudService.Application.Interfaces.Repositories;
+using CloudService.Domain.Constants;
 using CloudService.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 
@@ -39,7 +40,7 @@ public class AuthService : IAuthService
         {
             FullName = dto.FullName.Trim(),
             Email = dto.Email.Trim(),
-            Role = "User",
+            Role = AppRoles.User,
             IsActive = true
         };
 

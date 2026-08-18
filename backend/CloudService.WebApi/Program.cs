@@ -1,4 +1,4 @@
-﻿using CloudService.Application.Interfaces;
+using CloudService.Application.Interfaces;
 using CloudService.Application.Interfaces.Repositories;
 using CloudService.Application.Interfaces.Services;
 using CloudService.Application.Services;
@@ -64,6 +64,7 @@ builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
 builder.Services.AddScoped<IServicePlanService, ServicePlanService>();
 builder.Services.AddScoped<IPlanPriceService, PlanPriceService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
+builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 
 // Authentication Services
 builder.Services.AddScoped<IAuthService, AuthService>();

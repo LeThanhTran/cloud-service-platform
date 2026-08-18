@@ -1,5 +1,6 @@
-﻿using CloudService.Application.DTOs.PlanPrices;
+using CloudService.Application.DTOs.PlanPrices;
 using CloudService.Application.Interfaces.Services;
+using CloudService.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -49,7 +50,7 @@ public class PlanPricesController : ControllerBase
 
     // POST: api/PlanPrices
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public async Task<IActionResult> Create(
         [FromBody] CreatePlanPriceDto dto)
     {
@@ -63,7 +64,7 @@ public class PlanPricesController : ControllerBase
 
     // PUT: api/PlanPrices/{id}
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdatePlanPriceDto dto)
@@ -78,7 +79,7 @@ public class PlanPricesController : ControllerBase
 
     // DELETE: api/PlanPrices/{id}
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public async Task<IActionResult> Delete(Guid id)
     {
         var success = await _service.DeleteAsync(id);
