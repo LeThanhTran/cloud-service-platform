@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using CloudService.Application.DTOs.Auth;
 using CloudService.Application.Interfaces.Repositories;
 using CloudService.Domain.Entities;
@@ -29,35 +30,26 @@ public class AuthService : IAuthService
         var users = await _userRepository.GetAllAsync();
 
         var existingUser = users.FirstOrDefault(u =>
-            u.Email.ToLower() == dto.Email.ToLower());
+            u.Email.Equals(dto.Email, StringComparison.OrdinalIgnoreCase));
 
         if (existingUser != null)
             throw new InvalidOperationException("Email đã được sử dụng.");
 
         var user = new AppUser
         {
-            FullName = dto.FullName,
-            Email = dto.Email,
+            FullName = dto.FullName.Trim(),
+            Email = dto.Email.Trim(),
             Role = "User",
             IsActive = true
         };
 
-        user.PasswordHash =
-            _passwordHasher.HashPassword(user, dto.Password);
+        user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
+        SetNewRefreshToken(user);
 
         await _userRepository.AddAsync(user);
         await _unitOfWork.SaveChangesAsync();
 
-        var token = _jwtService.GenerateToken(user);
-
-        return new AuthResponseDto
-        {
-            Id = user.Id,
-            FullName = user.FullName,
-            Email = user.Email,
-            Role = user.Role,
-            Token = token
-        };
+        return CreateAuthResponse(user);
     }
 
     public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)
@@ -65,7 +57,7 @@ public class AuthService : IAuthService
         var users = await _userRepository.GetAllAsync();
 
         var user = users.FirstOrDefault(u =>
-            u.Email.ToLower() == dto.Email.ToLower());
+            u.Email.Equals(dto.Email.Trim(), StringComparison.OrdinalIgnoreCase));
 
         if (user == null)
             return null;
@@ -81,15 +73,126 @@ public class AuthService : IAuthService
         if (result == PasswordVerificationResult.Failed)
             return null;
 
-        var token = _jwtService.GenerateToken(user);
+        // Mỗi lần đăng nhập sẽ tạo refresh token mới,
+        // refresh token trước đó tự động không còn hợp lệ.
+        SetNewRefreshToken(user);
+        _userRepository.Update(user);
 
+        await _unitOfWork.SaveChangesAsync();
+
+        return CreateAuthResponse(user);
+    }
+
+    public async Task<AuthResponseDto?> RefreshTokenAsync(string refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return null;
+
+        var users = await _userRepository.GetAllAsync();
+
+        var user = users.FirstOrDefault(u =>
+            u.RefreshToken == refreshToken);
+
+        if (user == null || !user.IsActive)
+            return null;
+
+        if (user.RefreshTokenExpiryTime == null ||
+            user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+        {
+            return null;
+        }
+
+        // Refresh Token Rotation: cấp cặp token mới và vô hiệu token cũ.
+        SetNewRefreshToken(user);
+        _userRepository.Update(user);
+
+        await _unitOfWork.SaveChangesAsync();
+
+        return CreateAuthResponse(user);
+    }
+
+    public async Task<bool> ChangePasswordAsync(
+        Guid userId,
+        ChangePasswordDto dto)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+
+        if (user == null)
+            return false;
+
+        if (!user.IsActive)
+            throw new InvalidOperationException("Tài khoản đã bị vô hiệu hóa.");
+
+        var verifyResult = _passwordHasher.VerifyHashedPassword(
+            user,
+            user.PasswordHash,
+            dto.CurrentPassword);
+
+        if (verifyResult == PasswordVerificationResult.Failed)
+            throw new InvalidOperationException("Mật khẩu hiện tại không đúng.");
+
+        var samePasswordResult = _passwordHasher.VerifyHashedPassword(
+            user,
+            user.PasswordHash,
+            dto.NewPassword);
+
+        if (samePasswordResult != PasswordVerificationResult.Failed)
+        {
+            throw new InvalidOperationException(
+                "Mật khẩu mới phải khác mật khẩu hiện tại.");
+        }
+
+        user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
+
+        // Đổi mật khẩu sẽ thu hồi refresh token hiện tại.
+        // Access token đã cấp vẫn hết hạn theo thời gian sống JWT.
+        user.RefreshToken = null;
+        user.RefreshTokenExpiryTime = null;
+
+        _userRepository.Update(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<bool> RevokeRefreshTokenAsync(Guid userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+
+        if (user == null)
+            return false;
+
+        user.RefreshToken = null;
+        user.RefreshTokenExpiryTime = null;
+
+        _userRepository.Update(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        return true;
+    }
+
+    private AuthResponseDto CreateAuthResponse(AppUser user)
+    {
         return new AuthResponseDto
         {
             Id = user.Id,
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role,
-            Token = token
+            Token = _jwtService.GenerateToken(user),
+            RefreshToken = user.RefreshToken ?? string.Empty
         };
+    }
+
+    private static void SetNewRefreshToken(AppUser user)
+    {
+        user.RefreshToken = GenerateRefreshToken();
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+    }
+
+    private static string GenerateRefreshToken()
+    {
+        var randomBytes = RandomNumberGenerator.GetBytes(64);
+        return Convert.ToBase64String(randomBytes);
     }
 }
