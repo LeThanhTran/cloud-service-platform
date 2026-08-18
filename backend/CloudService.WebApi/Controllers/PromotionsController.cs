@@ -63,7 +63,7 @@ public class PromotionsController : ControllerBase
     }
 
     // PUT: api/Promotions/{id}
-    [HttpPut("{id}")]
+    [HttpPut("{id:guid}")]
     [Authorize(Roles = AppRoles.Admin)]
     public async Task<IActionResult> Update(
         Guid id,
@@ -78,7 +78,7 @@ public class PromotionsController : ControllerBase
     }
 
     // DELETE: api/Promotions/{id}
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     [Authorize(Roles = AppRoles.Admin)]
     public async Task<IActionResult> Delete(Guid id)
     {

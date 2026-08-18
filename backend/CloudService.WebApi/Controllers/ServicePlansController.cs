@@ -58,14 +58,19 @@ public class ServicePlansController : ControllerBase
         var plan = await _service.GetByIdAsync(id);
 
         if (plan == null)
-            return NotFound(new { message = "Không tìm thấy gói dịch vụ." });
+        {
+            return Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Resource Not Found",
+                detail: "Không tìm thấy gói dịch vụ.");
+        }
 
         if (!TryParseQrCodeFormat(format, out var qrFormat))
         {
-            return BadRequest(new
-            {
-                message = "Định dạng QR không hợp lệ. Chỉ hỗ trợ png hoặc svg."
-            });
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Bad Request",
+                detail: "Định dạng QR không hợp lệ. Chỉ hỗ trợ png hoặc svg.");
         }
 
         var result = GenerateQrCode(id, qrFormat);
@@ -86,14 +91,19 @@ public class ServicePlansController : ControllerBase
         var plan = await _service.GetByIdAsync(id);
 
         if (plan == null)
-            return NotFound(new { message = "Không tìm thấy gói dịch vụ." });
+        {
+            return Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Resource Not Found",
+                detail: "Không tìm thấy gói dịch vụ.");
+        }
 
         if (!TryParseQrCodeFormat(format, out var qrFormat))
         {
-            return BadRequest(new
-            {
-                message = "Định dạng QR không hợp lệ. Chỉ hỗ trợ png hoặc svg."
-            });
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Bad Request",
+                detail: "Định dạng QR không hợp lệ. Chỉ hỗ trợ png hoặc svg.");
         }
 
         var result = GenerateQrCode(id, qrFormat);

@@ -20,38 +20,24 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterDto dto)
     {
-        try
-        {
-            var result = await _authService.RegisterAsync(dto);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _authService.RegisterAsync(dto);
+        return Ok(result);
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto dto)
     {
-        try
-        {
-            var result = await _authService.LoginAsync(dto);
+        var result = await _authService.LoginAsync(dto);
 
-            if (result == null)
-            {
-                return Unauthorized(new
-                {
-                    message = "Email hoặc mật khẩu không đúng."
-                });
-            }
-
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
+        if (result == null)
         {
-            return BadRequest(new { message = ex.Message });
+            return Problem(
+                statusCode: StatusCodes.Status401Unauthorized,
+                title: "Unauthorized",
+                detail: "Email hoặc mật khẩu không đúng.");
         }
+
+        return Ok(result);
     }
 
     [HttpPost("refresh-token")]
@@ -61,10 +47,10 @@ public class AuthController : ControllerBase
 
         if (result == null)
         {
-            return Unauthorized(new
-            {
-                message = "Refresh token không hợp lệ hoặc đã hết hạn."
-            });
+            return Problem(
+                statusCode: StatusCodes.Status401Unauthorized,
+                title: "Unauthorized",
+                detail: "Refresh token không hợp lệ hoặc đã hết hạn.");
         }
 
         return Ok(result);
@@ -75,24 +61,27 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
     {
         if (!TryGetCurrentUserId(out var userId))
-            return Unauthorized(new { message = "Token không hợp lệ." });
-
-        try
         {
-            var success = await _authService.ChangePasswordAsync(userId, dto);
-
-            if (!success)
-                return NotFound(new { message = "Không tìm thấy tài khoản." });
-
-            return Ok(new
-            {
-                message = "Đổi mật khẩu thành công. Vui lòng đăng nhập lại."
-            });
+            return Problem(
+                statusCode: StatusCodes.Status401Unauthorized,
+                title: "Unauthorized",
+                detail: "Token không hợp lệ.");
         }
-        catch (InvalidOperationException ex)
+
+        var success = await _authService.ChangePasswordAsync(userId, dto);
+
+        if (!success)
         {
-            return BadRequest(new { message = ex.Message });
+            return Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Resource Not Found",
+                detail: "Không tìm thấy tài khoản.");
         }
+
+        return Ok(new
+        {
+            message = "Đổi mật khẩu thành công. Vui lòng đăng nhập lại."
+        });
     }
 
     [Authorize]
@@ -100,12 +89,22 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Logout()
     {
         if (!TryGetCurrentUserId(out var userId))
-            return Unauthorized(new { message = "Token không hợp lệ." });
+        {
+            return Problem(
+                statusCode: StatusCodes.Status401Unauthorized,
+                title: "Unauthorized",
+                detail: "Token không hợp lệ.");
+        }
 
         var success = await _authService.RevokeRefreshTokenAsync(userId);
 
         if (!success)
-            return NotFound(new { message = "Không tìm thấy tài khoản." });
+        {
+            return Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Resource Not Found",
+                detail: "Không tìm thấy tài khoản.");
+        }
 
         return Ok(new
         {
