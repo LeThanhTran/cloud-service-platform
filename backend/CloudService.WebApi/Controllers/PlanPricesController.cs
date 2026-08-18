@@ -19,7 +19,7 @@ public class PlanPricesController : ControllerBase
 
     // GET: api/PlanPrices
     [HttpGet]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAll()
     {
         var result = await _service.GetAllAsync();
@@ -27,8 +27,8 @@ public class PlanPricesController : ControllerBase
     }
 
     // GET: api/PlanPrices/{id}
-    [HttpGet("{id}")]
-    [Authorize]
+    [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await _service.GetByIdAsync(id);
@@ -40,8 +40,8 @@ public class PlanPricesController : ControllerBase
     }
 
     // GET: api/PlanPrices/by-plan/{servicePlanId}
-    [HttpGet("by-plan/{servicePlanId}")]
-    [Authorize]
+    [HttpGet("by-plan/{servicePlanId:guid}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetByServicePlanId(Guid servicePlanId)
     {
         var result = await _service.GetByServicePlanIdAsync(servicePlanId);

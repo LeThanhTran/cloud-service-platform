@@ -20,7 +20,7 @@ public class ServiceCategoriesController : ControllerBase
 
     // GET: api/ServiceCategories
     [HttpGet]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<ServiceCategoryDto>>> GetAll()
     {
         var categories = await _serviceCategoryService.GetAllAsync();
@@ -30,7 +30,7 @@ public class ServiceCategoriesController : ControllerBase
 
     // GET: api/ServiceCategories/{id}
     [HttpGet("{id:guid}")]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<ActionResult<ServiceCategoryDto>> GetById(Guid id)
     {
         var category = await _serviceCategoryService.GetByIdAsync(id);
