@@ -6,6 +6,7 @@ using CloudService.Application.Services;
 using CloudService.Domain.Entities;
 using CloudService.Infrastructure.Data;
 using CloudService.Infrastructure.Repositories;
+using CloudService.WebApi.ErrorHandling;
 using CloudService.WebApi.Services;
 using CloudService.WebApi.Services.QrCodes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -19,6 +20,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+// Chuẩn hóa response lỗi theo RFC 7807 ProblemDetails.
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Extensions["traceId"] =
+            context.HttpContext.TraceIdentifier;
+    };
+});
+
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -118,6 +131,9 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

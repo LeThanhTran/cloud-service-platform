@@ -19,7 +19,6 @@ public class UsersController : ControllerBase
     }
 
     // GET: api/Users
-    // Chỉ Admin được xem danh sách tài khoản để quản lý role.
     [HttpGet]
     public async Task<ActionResult<IEnumerable<UserDto>>> GetAll()
     {
@@ -28,24 +27,21 @@ public class UsersController : ControllerBase
     }
 
     // PUT: api/Users/{id}/role
-    // Cho phép Admin gán một trong ba role: Admin, Editor, User.
     [HttpPut("{id:guid}/role")]
     public async Task<ActionResult<UserDto>> UpdateRole(
         Guid id,
         UpdateUserRoleDto dto)
     {
-        try
-        {
-            var user = await _userManagementService.UpdateRoleAsync(id, dto);
+        var user = await _userManagementService.UpdateRoleAsync(id, dto);
 
-            if (user == null)
-                return NotFound(new { message = "Không tìm thấy tài khoản." });
-
-            return Ok(user);
-        }
-        catch (ArgumentException ex)
+        if (user == null)
         {
-            return BadRequest(new { message = ex.Message });
+            return Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Resource Not Found",
+                detail: "Không tìm thấy tài khoản.");
         }
+
+        return Ok(user);
     }
 }
