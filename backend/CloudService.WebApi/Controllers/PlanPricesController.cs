@@ -1,5 +1,6 @@
 ﻿using CloudService.Application.DTOs.PlanPrices;
 using CloudService.Application.Interfaces.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CloudService.WebApi.Controllers;
@@ -15,48 +16,76 @@ public class PlanPricesController : ControllerBase
         _service = service;
     }
 
+    // GET: api/PlanPrices
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetAll()
     {
         var result = await _service.GetAllAsync();
         return Ok(result);
     }
 
+    // GET: api/PlanPrices/{id}
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await _service.GetByIdAsync(id);
-        if (result == null) return NotFound();
+
+        if (result == null)
+            return NotFound();
+
         return Ok(result);
     }
 
+    // GET: api/PlanPrices/by-plan/{servicePlanId}
     [HttpGet("by-plan/{servicePlanId}")]
+    [Authorize]
     public async Task<IActionResult> GetByServicePlanId(Guid servicePlanId)
     {
         var result = await _service.GetByServicePlanIdAsync(servicePlanId);
         return Ok(result);
     }
 
+    // POST: api/PlanPrices
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreatePlanPriceDto dto)
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Create(
+        [FromBody] CreatePlanPriceDto dto)
     {
         var result = await _service.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = result.Id },
+            result);
     }
 
+    // PUT: api/PlanPrices/{id}
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePlanPriceDto dto)
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromBody] UpdatePlanPriceDto dto)
     {
         var success = await _service.UpdateAsync(id, dto);
-        if (!success) return NotFound();
+
+        if (!success)
+            return NotFound();
+
         return NoContent();
     }
 
+    // DELETE: api/PlanPrices/{id}
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var success = await _service.DeleteAsync(id);
-        if (!success) return NotFound();
+
+        if (!success)
+            return NotFound();
+
         return NoContent();
     }
 }
