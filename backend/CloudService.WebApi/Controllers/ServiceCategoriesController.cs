@@ -1,5 +1,6 @@
 using CloudService.Application.DTOs.ServiceCategories;
 using CloudService.Application.Interfaces.Services;
+using CloudService.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -42,7 +43,7 @@ public class ServiceCategoriesController : ControllerBase
 
     // POST: api/ServiceCategories
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public async Task<ActionResult<ServiceCategoryDto>> Create(
         CreateServiceCategoryDto dto)
     {
@@ -56,7 +57,7 @@ public class ServiceCategoriesController : ControllerBase
 
     // PUT: api/ServiceCategories/{id}
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public async Task<ActionResult<ServiceCategoryDto>> Update(
         Guid id,
         UpdateServiceCategoryDto dto)
@@ -72,7 +73,7 @@ public class ServiceCategoriesController : ControllerBase
 
     // DELETE: api/ServiceCategories/{id}
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public async Task<IActionResult> Delete(Guid id)
     {
         var deleted = await _serviceCategoryService.DeleteAsync(id);

@@ -1,4 +1,5 @@
 using CloudService.Domain.Common;
+using CloudService.Domain.Constants;
 
 namespace CloudService.Domain.Entities;
 
@@ -10,7 +11,7 @@ public class AppUser : BaseEntity
 
     public string PasswordHash { get; set; } = string.Empty;
 
-    public string Role { get; set; } = "User";
+    public string Role { get; set; } = AppRoles.User;
 
     public bool IsActive { get; set; } = true;
 

@@ -1,5 +1,6 @@
-﻿using CloudService.Application.DTOs.Promotions;
+using CloudService.Application.DTOs.Promotions;
 using CloudService.Application.Interfaces.Services;
+using CloudService.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -49,7 +50,7 @@ public class PromotionsController : ControllerBase
 
     // POST: api/Promotions
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public async Task<IActionResult> Create(
         [FromBody] CreatePromotionDto dto)
     {
@@ -63,7 +64,7 @@ public class PromotionsController : ControllerBase
 
     // PUT: api/Promotions/{id}
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdatePromotionDto dto)
@@ -78,7 +79,7 @@ public class PromotionsController : ControllerBase
 
     // DELETE: api/Promotions/{id}
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public async Task<IActionResult> Delete(Guid id)
     {
         var success = await _service.DeleteAsync(id);
