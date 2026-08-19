@@ -1,9 +1,12 @@
 import { apiFetch, getApiBaseUrl, readProblemDetails } from "@/lib/api";
 import type {
   PlanPrice,
+  PlanPriceInput,
   Promotion,
+  PromotionInput,
   ServiceCategory,
   ServicePlan,
+  ServicePlanInput,
 } from "@/types/service";
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -13,6 +16,12 @@ async function readJson<T>(response: Response): Promise<T> {
   }
 
   return (await response.json()) as T;
+}
+
+async function ensureOk(response: Response, fallbackMessage: string) {
+  if (response.ok) return;
+  const problem = await readProblemDetails(response);
+  throw new Error(problem.detail ?? problem.title ?? fallbackMessage);
 }
 
 export async function getServiceCategories() {
@@ -32,6 +41,29 @@ export async function getServicePlan(id: string) {
   return readJson<ServicePlan>(response);
 }
 
+export async function createServicePlan(payload: ServicePlanInput) {
+  const response = await apiFetch("/api/ServicePlans", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return readJson<ServicePlan>(response);
+}
+
+export async function updateServicePlan(id: string, payload: ServicePlanInput) {
+  const response = await apiFetch(`/api/ServicePlans/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  await ensureOk(response, "Không thể cập nhật gói dịch vụ.");
+}
+
+export async function deleteServicePlan(id: string) {
+  const response = await apiFetch(`/api/ServicePlans/${id}`, {
+    method: "DELETE",
+  });
+  await ensureOk(response, "Không thể xóa gói dịch vụ.");
+}
+
 export async function getPlanPrices() {
   const response = await apiFetch("/api/PlanPrices", { auth: false });
   return readJson<PlanPrice[]>(response);
@@ -44,6 +76,29 @@ export async function getPlanPricesByPlan(servicePlanId: string) {
   return readJson<PlanPrice[]>(response);
 }
 
+export async function createPlanPrice(payload: PlanPriceInput) {
+  const response = await apiFetch("/api/PlanPrices", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return readJson<PlanPrice>(response);
+}
+
+export async function updatePlanPrice(id: string, payload: PlanPriceInput) {
+  const response = await apiFetch(`/api/PlanPrices/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  await ensureOk(response, "Không thể cập nhật bảng giá.");
+}
+
+export async function deletePlanPrice(id: string) {
+  const response = await apiFetch(`/api/PlanPrices/${id}`, {
+    method: "DELETE",
+  });
+  await ensureOk(response, "Không thể xóa bảng giá.");
+}
+
 export async function getPromotions() {
   const response = await apiFetch("/api/Promotions", { auth: false });
   return readJson<Promotion[]>(response);
@@ -54,6 +109,29 @@ export async function getPromotionsByPlan(servicePlanId: string) {
     auth: false,
   });
   return readJson<Promotion[]>(response);
+}
+
+export async function createPromotion(payload: PromotionInput) {
+  const response = await apiFetch("/api/Promotions", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return readJson<Promotion>(response);
+}
+
+export async function updatePromotion(id: string, payload: PromotionInput) {
+  const response = await apiFetch(`/api/Promotions/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  await ensureOk(response, "Không thể cập nhật khuyến mãi.");
+}
+
+export async function deletePromotion(id: string) {
+  const response = await apiFetch(`/api/Promotions/${id}`, {
+    method: "DELETE",
+  });
+  await ensureOk(response, "Không thể xóa khuyến mãi.");
 }
 
 export function getServicePlanQrUrl(servicePlanId: string, format = "png") {
