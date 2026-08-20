@@ -25,8 +25,19 @@ type NotificationBellProps = {
   compact?: boolean;
 };
 
+function parseUtcDate(value: string) {
+  // SQL Server datetime2 không lưu timezone. Nếu API cũ trả chuỗi không có
+  // Z/offset, coi giá trị đó là UTC để tránh lệch đúng 7 giờ ở Việt Nam.
+  const hasTimeZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+  return new Date(hasTimeZone ? value : `${value}Z`);
+}
+
 function relativeTime(value: string) {
-  const created = new Date(value).getTime();
+  const createdDate = parseUtcDate(value);
+  const created = createdDate.getTime();
+
+  if (Number.isNaN(created)) return "";
+
   const seconds = Math.max(0, Math.floor((Date.now() - created) / 1000));
 
   if (seconds < 60) return "Vừa xong";
@@ -38,7 +49,7 @@ function relativeTime(value: string) {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  }).format(new Date(value));
+  }).format(createdDate);
 }
 
 function NotificationIcon({ type }: { type: string }) {
