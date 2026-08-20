@@ -201,6 +201,6 @@ public class NotificationService : INotificationService
         Type = notification.Type,
         Link = notification.Link,
         IsRead = notification.IsRead,
-        CreatedAt = notification.CreatedAt
+        CreatedAt = DateTime.SpecifyKind(notification.CreatedAt, DateTimeKind.Utc)
     };
 }

@@ -46,7 +46,7 @@ export function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-2.5 lg:flex">
-          {ready && session && <NotificationBell />}
+          {canManage && <NotificationBell />}
           {canManage ? (
             <ButtonLink href="/admin/dashboard" className="h-10 gap-2 rounded-[10px] px-4 text-[12px]"><LayoutDashboard className="size-4" /> Quản trị</ButtonLink>
           ) : (
