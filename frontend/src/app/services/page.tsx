@@ -194,12 +194,20 @@ function ServicePlanCard({ plan, categoryName }: { plan: ServicePlan; categoryNa
         <Spec icon={Gauge} label="Bandwidth" value={`${plan.bandwidthGB} GB`} />
       </div>
 
-      <Link
-        href={`/services/${plan.id}`}
-        className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-navy-900 text-sm font-semibold text-white transition hover:bg-brand-700"
-      >
-        Xem chi tiết <ArrowRight className="size-4" />
-      </Link>
+      <div className="mt-6 grid grid-cols-2 gap-2.5">
+        <Link
+          href={`/services/${plan.id}`}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-line bg-white text-sm font-semibold text-navy-900 transition hover:border-brand-200 hover:bg-brand-50/60"
+        >
+          Chi tiết <ArrowRight className="size-4" />
+        </Link>
+        <Link
+          href={`/order?servicePlanId=${plan.id}`}
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-brand-600 text-sm font-semibold text-white transition hover:bg-brand-700"
+        >
+          Đặt ngay
+        </Link>
+      </div>
     </article>
   );
 }
