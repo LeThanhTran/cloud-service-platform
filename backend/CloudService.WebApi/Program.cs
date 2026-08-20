@@ -96,6 +96,8 @@ builder.Services.AddScoped<IServicePlanService, ServicePlanService>();
 builder.Services.AddScoped<IPlanPriceService, PlanPriceService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<INewsArticleService, NewsArticleService>();
+builder.Services.AddScoped<IOrderRequestService, OrderRequestService>();
+builder.Services.AddScoped<IAffiliateApplicationService, AffiliateApplicationService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddSingleton<IQrCodeGeneratorFactory, QrCodeGeneratorFactory>();
 
