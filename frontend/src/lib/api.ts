@@ -5,6 +5,7 @@ const API_BASE_URL = (
 ).replace(/\/$/, "");
 
 const AUTH_STORAGE_KEY = "novacloud.auth";
+export const AUTH_EXPIRED_EVENT = "novacloud:auth-expired";
 
 export function getApiBaseUrl() {
   return API_BASE_URL;
@@ -34,6 +35,38 @@ export function removeStoredSession() {
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
 }
 
+function notifyAuthExpired() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+}
+
+function getJwtExpiration(token: string) {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const payloadPart = token.split(".")[1];
+    if (!payloadPart) return null;
+
+    const normalized = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(
+      normalized.length + ((4 - (normalized.length % 4)) % 4),
+      "=",
+    );
+    const payload = JSON.parse(window.atob(padded)) as { exp?: number };
+
+    return typeof payload.exp === "number" ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+function isAccessTokenExpired(token: string, skewSeconds = 15) {
+  const expiresAt = getJwtExpiration(token);
+  if (!expiresAt) return false;
+
+  return expiresAt <= Date.now() + skewSeconds * 1000;
+}
+
 export async function readProblemDetails(response: Response): Promise<ProblemDetails> {
   try {
     return (await response.json()) as ProblemDetails;
@@ -47,23 +80,47 @@ export async function readProblemDetails(response: Response): Promise<ProblemDet
 }
 
 async function refreshSession(current: AuthSession): Promise<AuthSession | null> {
-  const response = await fetch(`${API_BASE_URL}/api/Auth/refresh-token`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({ refreshToken: current.refreshToken }),
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/Auth/refresh-token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ refreshToken: current.refreshToken }),
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      removeStoredSession();
+      notifyAuthExpired();
+      return null;
+    }
+
+    const refreshed = (await response.json()) as AuthSession;
+    storeSession(refreshed);
+    return refreshed;
+  } catch {
     removeStoredSession();
+    notifyAuthExpired();
+    return null;
+  }
+}
+
+export async function restoreStoredSession(): Promise<AuthSession | null> {
+  const current = getStoredSession();
+  if (!current) return null;
+
+  if (!isAccessTokenExpired(current.token)) {
+    return current;
+  }
+
+  if (!current.refreshToken) {
+    removeStoredSession();
+    notifyAuthExpired();
     return null;
   }
 
-  const refreshed = (await response.json()) as AuthSession;
-  storeSession(refreshed);
-  return refreshed;
+  return refreshSession(current);
 }
 
 interface ApiFetchOptions extends RequestInit {
@@ -126,6 +183,11 @@ export async function apiFetch(
       session = refreshed;
       response = await makeRequest(session.token);
     }
+  }
+
+  if (auth && response.status === 401) {
+    removeStoredSession();
+    notifyAuthExpired();
   }
 
   return response;

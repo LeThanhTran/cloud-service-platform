@@ -1,13 +1,16 @@
 "use client";
 
 import { LoaderCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
-
-const MANAGEMENT_ROLES = new Set(["Admin", "Editor"]);
+import {
+  canAccessAdminPath,
+  isManagementRole,
+} from "@/lib/admin-route-policy";
 
 export function AdminGuard({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const router = useRouter();
   const { session, ready } = useAuth();
 
@@ -15,21 +18,33 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
     if (!ready) return;
 
     if (!session) {
-      router.replace("/admin/login");
+      const returnUrl = encodeURIComponent(pathname || "/admin/dashboard");
+      router.replace(`/admin/login?returnUrl=${returnUrl}`);
       return;
     }
 
-    if (!MANAGEMENT_ROLES.has(session.role)) {
-      router.replace("/admin/login?reason=forbidden");
+    if (!isManagementRole(session.role)) {
+      router.replace("/403?reason=management-role");
+      return;
     }
-  }, [ready, router, session]);
 
-  if (!ready || !session || !MANAGEMENT_ROLES.has(session.role)) {
+    if (!canAccessAdminPath(pathname, session.role)) {
+      router.replace(`/403?reason=role&from=${encodeURIComponent(pathname)}`);
+    }
+  }, [pathname, ready, router, session]);
+
+  const allowed =
+    ready &&
+    !!session &&
+    isManagementRole(session.role) &&
+    canAccessAdminPath(pathname, session.role);
+
+  if (!allowed) {
     return (
       <div className="grid min-h-screen place-items-center bg-[#f7faff]">
         <div className="flex items-center gap-3 text-sm font-medium text-slate-500">
           <LoaderCircle className="size-5 animate-spin text-brand-600" />
-          Đang kiểm tra phiên đăng nhập...
+          Đang kiểm tra quyền truy cập...
         </div>
       </div>
     );
