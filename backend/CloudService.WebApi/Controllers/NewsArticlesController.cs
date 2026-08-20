@@ -10,11 +10,26 @@ namespace CloudService.WebApi.Controllers;
 [Route("api/[controller]")]
 public class NewsArticlesController : ControllerBase
 {
-    private readonly INewsArticleService _service;
+    private const long MaxImageSize = 5 * 1024 * 1024;
+    private const long MaxUploadRequestSize = 6 * 1024 * 1024;
 
-    public NewsArticlesController(INewsArticleService service)
+    private static readonly IReadOnlyDictionary<string, string> AllowedImageTypes =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["image/jpeg"] = ".jpg",
+            ["image/png"] = ".png",
+            ["image/webp"] = ".webp"
+        };
+
+    private readonly INewsArticleService _service;
+    private readonly IWebHostEnvironment _environment;
+
+    public NewsArticlesController(
+        INewsArticleService service,
+        IWebHostEnvironment environment)
     {
         _service = service;
+        _environment = environment;
     }
 
     // Public: chỉ trả các bài đã publish.
@@ -39,7 +54,6 @@ public class NewsArticlesController : ControllerBase
     }
 
     // Public: chi tiết bài đã publish theo Guid.
-    // GET: api/NewsArticles/{id}
     [HttpGet("{id:guid}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetPublishedById(Guid id)
@@ -58,7 +72,6 @@ public class NewsArticlesController : ControllerBase
     }
 
     // Public: frontend dùng slug để tạo URL đọc bài thân thiện.
-    // GET: api/NewsArticles/slug/huong-dan-cloud-vps
     [HttpGet("slug/{slug}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetPublishedBySlug(string slug)
@@ -77,7 +90,6 @@ public class NewsArticlesController : ControllerBase
     }
 
     // Public: danh sách category dùng cho bộ lọc News frontend.
-    // GET: api/NewsArticles/categories
     [HttpGet("categories")]
     [AllowAnonymous]
     public async Task<IActionResult> GetCategories()
@@ -87,7 +99,6 @@ public class NewsArticlesController : ControllerBase
     }
 
     // Admin/Editor: xem cả bài nháp và bài đã publish.
-    // GET: api/NewsArticles/manage?isPublished=false&page=1&pageSize=10
     [HttpGet("manage")]
     [Authorize(Roles = AppRoles.AdminOrEditor)]
     public async Task<IActionResult> GetForManagement(
@@ -110,7 +121,6 @@ public class NewsArticlesController : ControllerBase
     }
 
     // Admin/Editor: lấy một bài kể cả khi đang Draft.
-    // GET: api/NewsArticles/manage/{id}
     [HttpGet("manage/{id:guid}")]
     [Authorize(Roles = AppRoles.AdminOrEditor)]
     public async Task<IActionResult> GetByIdForManagement(Guid id)
@@ -128,7 +138,47 @@ public class NewsArticlesController : ControllerBase
         return Ok(article);
     }
 
-    // POST: api/NewsArticles
+    // Admin/Editor: upload ảnh thumbnail cho bài viết.
+    // File được lưu trong wwwroot/uploads/news, DB chỉ lưu URL trả về.
+    [HttpPost("upload-image")]
+    [Authorize(Roles = AppRoles.AdminOrEditor)]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(MaxUploadRequestSize)]
+    public async Task<IActionResult> UploadImage(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            throw new ArgumentException("Hãy chọn một ảnh để upload.");
+
+        if (file.Length > MaxImageSize)
+            throw new ArgumentException("Ảnh không được lớn hơn 5 MB.");
+
+        if (!AllowedImageTypes.TryGetValue(file.ContentType, out var extension))
+        {
+            throw new ArgumentException(
+                "Định dạng ảnh không hợp lệ. Chỉ hỗ trợ JPG, PNG hoặc WebP.");
+        }
+
+        var webRoot = _environment.WebRootPath;
+        if (string.IsNullOrWhiteSpace(webRoot))
+            webRoot = Path.Combine(_environment.ContentRootPath, "wwwroot");
+
+        var uploadDirectory = Path.Combine(webRoot, "uploads", "news");
+        Directory.CreateDirectory(uploadDirectory);
+
+        var fileName = $"{Guid.NewGuid():N}{extension}";
+        var physicalPath = Path.Combine(uploadDirectory, fileName);
+
+        await using (var stream = System.IO.File.Create(physicalPath))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var relativePath = $"/uploads/news/{fileName}";
+        var absoluteUrl = $"{Request.Scheme}://{Request.Host}{relativePath}";
+
+        return Ok(new { url = absoluteUrl });
+    }
+
     [HttpPost]
     [Authorize(Roles = AppRoles.AdminOrEditor)]
     public async Task<IActionResult> Create(CreateNewsArticleDto dto)
@@ -137,12 +187,9 @@ public class NewsArticlesController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, article);
     }
 
-    // PUT: api/NewsArticles/{id}
     [HttpPut("{id:guid}")]
     [Authorize(Roles = AppRoles.AdminOrEditor)]
-    public async Task<IActionResult> Update(
-        Guid id,
-        UpdateNewsArticleDto dto)
+    public async Task<IActionResult> Update(Guid id, UpdateNewsArticleDto dto)
     {
         var success = await _service.UpdateAsync(id, dto);
 
@@ -157,7 +204,6 @@ public class NewsArticlesController : ControllerBase
         return NoContent();
     }
 
-    // DELETE: api/NewsArticles/{id}
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = AppRoles.AdminOrEditor)]
     public async Task<IActionResult> Delete(Guid id)
