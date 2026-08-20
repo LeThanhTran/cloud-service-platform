@@ -8,6 +8,7 @@ import {
   KeyRound,
   LayoutDashboard,
   LogOut,
+  MessageSquare,
   Newspaper,
   Percent,
   Handshake,
@@ -58,6 +59,11 @@ const navigation = [
     label: "Affiliate",
     href: "/admin/affiliates",
     icon: Handshake,
+  },
+  {
+    label: "Liên hệ",
+    href: "/admin/contacts",
+    icon: MessageSquare,
   },
   {
     label: "Bảo mật tài khoản",

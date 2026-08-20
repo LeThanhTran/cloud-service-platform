@@ -28,6 +28,8 @@ public class CloudServiceDbContext : DbContext
     public DbSet<AffiliateApplication> AffiliateApplications
         => Set<AffiliateApplication>();
 
+    public DbSet<ContactRequest> ContactRequests => Set<ContactRequest>();
+
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -41,6 +43,36 @@ public class CloudServiceDbContext : DbContext
         modelBuilder.Entity<Promotion>()
             .Property(x => x.DiscountPercent)
             .HasPrecision(5, 2);
+
+
+        modelBuilder.Entity<ContactRequest>(entity =>
+        {
+            entity.Property(x => x.FullName)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(x => x.Email)
+                .HasMaxLength(150)
+                .IsRequired();
+
+            entity.Property(x => x.PhoneNumber)
+                .HasMaxLength(30);
+
+            entity.Property(x => x.Subject)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(x => x.Message)
+                .HasMaxLength(2000)
+                .IsRequired();
+
+            entity.Property(x => x.Status)
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.HasIndex(x => x.Status);
+            entity.HasIndex(x => x.CreatedAt);
+        });
 
         modelBuilder.Entity<AppUser>(entity =>
         {
