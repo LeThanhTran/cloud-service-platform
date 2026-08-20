@@ -7,6 +7,7 @@ import { PromoBanner } from "@/components/home/promo-banner";
 import { ServicesPreview } from "@/components/home/services-preview";
 import { SocialProof } from "@/components/home/social-proof";
 import { StatsStrip } from "@/components/home/stats-strip";
+import { NewsPreview } from "@/components/home/news-preview";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
 
@@ -85,6 +86,7 @@ export default function Home() {
         <StatsStrip />
         <PricingPreview />
         <PromoBanner />
+        <NewsPreview />
         <SocialProof />
       </main>
 
