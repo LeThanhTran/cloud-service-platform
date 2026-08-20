@@ -9,8 +9,10 @@ import {
   useState,
 } from "react";
 import {
+  AUTH_EXPIRED_EVENT,
   getStoredSession,
   removeStoredSession,
+  restoreStoredSession,
   storeSession,
 } from "@/lib/api";
 import type { AuthSession } from "@/types/auth";
@@ -34,18 +36,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    reloadSession();
-    setReady(true);
-  }, [reloadSession]);
+    let active = true;
+
+    async function initializeSession() {
+      const restored = await restoreStoredSession();
+      if (!active) return;
+
+      setSession(restored);
+      setReady(true);
+    }
+
+    function handleAuthExpired() {
+      setSession(null);
+      setReady(true);
+    }
+
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    void initializeSession();
+
+    return () => {
+      active = false;
+      window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    };
+  }, []);
 
   const saveSession = useCallback((nextSession: AuthSession) => {
     storeSession(nextSession);
     setSession(nextSession);
+    setReady(true);
   }, []);
 
   const clearSession = useCallback(() => {
     removeStoredSession();
     setSession(null);
+    setReady(true);
   }, []);
 
   const value = useMemo(

@@ -18,6 +18,11 @@ import { FormEvent, useEffect, useState } from "react";
 import { Brand } from "@/components/ui/brand";
 import { useAuth } from "@/components/auth/auth-provider";
 import { getApiBaseUrl, readProblemDetails } from "@/lib/api";
+import {
+  canAccessAdminPath,
+  isManagementRole,
+  sanitizeAdminReturnUrl,
+} from "@/lib/admin-route-policy";
 import type { AuthSession } from "@/types/auth";
 
 export default function AdminLoginPage() {
@@ -31,9 +36,22 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (ready && session && ["Admin", "Editor"].includes(session.role)) {
-      router.replace("/admin/dashboard");
+    if (!ready || !session) return;
+
+    if (!isManagementRole(session.role)) {
+      router.replace("/403?reason=management-role");
+      return;
     }
+
+    const returnUrl = sanitizeAdminReturnUrl(
+      new URLSearchParams(window.location.search).get("returnUrl"),
+    );
+
+    router.replace(
+      canAccessAdminPath(returnUrl, session.role)
+        ? returnUrl
+        : "/403?reason=role",
+    );
   }, [ready, router, session]);
 
   useEffect(() => {
@@ -66,13 +84,22 @@ export default function AdminLoginPage() {
 
       const result = (await response.json()) as AuthSession;
 
-      if (!["Admin", "Editor"].includes(result.role)) {
+      if (!isManagementRole(result.role)) {
         setError("Tài khoản không có quyền truy cập khu vực quản trị.");
         return;
       }
 
       saveSession(result);
-      router.replace("/admin/dashboard");
+
+      const returnUrl = sanitizeAdminReturnUrl(
+        new URLSearchParams(window.location.search).get("returnUrl"),
+      );
+
+      router.replace(
+        canAccessAdminPath(returnUrl, result.role)
+          ? returnUrl
+          : "/403?reason=role",
+      );
       router.refresh();
     } catch {
       setError(
