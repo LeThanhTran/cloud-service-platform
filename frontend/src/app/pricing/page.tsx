@@ -160,9 +160,14 @@ export default function PricingPage() {
                         ))}
                       </div>
 
-                      <Link href={`/services/${plan.id}`} className={`mt-7 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold transition ${plan.isFeatured ? "bg-brand-600 text-white hover:bg-brand-700" : "border border-line bg-white text-navy-900 hover:border-brand-200 hover:bg-brand-50/60"}`}>
-                        Xem gói dịch vụ <ArrowRight className="size-4" />
-                      </Link>
+                      <div className="mt-7 grid grid-cols-2 gap-2.5">
+                        <Link href={`/services/${plan.id}`} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-line bg-white text-xs font-semibold text-navy-900 transition hover:border-brand-200 hover:bg-brand-50/60">
+                          Chi tiết <ArrowRight className="size-3.5" />
+                        </Link>
+                        <Link href={`/order?servicePlanId=${plan.id}&billingCycle=${cycle === "monthly" ? "Monthly" : "Yearly"}`} className={`inline-flex h-11 items-center justify-center rounded-xl text-xs font-semibold transition ${plan.isFeatured ? "bg-brand-600 text-white hover:bg-brand-700" : "bg-navy-900 text-white hover:bg-brand-700"}`}>
+                          Đặt ngay
+                        </Link>
+                      </div>
                     </article>
                   );
                 })}

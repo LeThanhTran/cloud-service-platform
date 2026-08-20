@@ -164,7 +164,7 @@ export default function ServiceDetailPage() {
                 </div>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <Link href={`/contact?plan=${plan.id}`} className="inline-flex h-11 items-center justify-center rounded-xl bg-brand-600 px-5 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(11,99,246,0.20)] hover:bg-brand-700">
+                  <Link href={`/order?servicePlanId=${plan.id}`} className="inline-flex h-11 items-center justify-center rounded-xl bg-brand-600 px-5 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(11,99,246,0.20)] hover:bg-brand-700">
                     Đăng ký dịch vụ
                   </Link>
                   <Link href="/pricing" className="inline-flex h-11 items-center justify-center rounded-xl border border-line bg-white px-5 text-sm font-semibold text-navy-900 hover:border-brand-200 hover:bg-brand-50/60">
