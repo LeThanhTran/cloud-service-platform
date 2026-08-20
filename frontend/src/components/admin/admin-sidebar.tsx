@@ -8,6 +8,7 @@ import {
   KeyRound,
   LayoutDashboard,
   LogOut,
+  Newspaper,
   Percent,
   Server,
   ShieldCheck,
@@ -40,6 +41,11 @@ const navigation = [
     href: "/admin/promotions",
     icon: Percent,
     adminOnly: true,
+  },
+  {
+    label: "Tin tức",
+    href: "/admin/news",
+    icon: Newspaper,
   },
   {
     label: "Bảo mật tài khoản",

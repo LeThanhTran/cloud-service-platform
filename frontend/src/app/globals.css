@@ -109,3 +109,22 @@ select {
     @apply h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100/70;
   }
 }
+
+.input-admin {
+  width: 100%;
+  min-height: 2.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  padding-left: 0.875rem;
+  padding-right: 0.875rem;
+  font-size: 0.75rem;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.input-admin:focus {
+  border-color: #0b63f6;
+  box-shadow: 0 0 0 4px rgba(11, 99, 246, 0.09);
+}
