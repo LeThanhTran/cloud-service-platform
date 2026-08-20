@@ -1,6 +1,7 @@
 using CloudService.Application.DTOs.AffiliateApplications;
 using CloudService.Application.DTOs.Common;
 using CloudService.Application.Interfaces.Repositories;
+using CloudService.Domain.Constants;
 using CloudService.Domain.Entities;
 
 namespace CloudService.Application.Interfaces.Services;
@@ -11,13 +12,16 @@ public class AffiliateApplicationService : IAffiliateApplicationService
     private static readonly string[] AllowedStatuses = new[] { "New", "Processing", "Completed", "Rejected" };
 
     private readonly IRepository<AffiliateApplication> _repository;
+    private readonly INotificationService _notificationService;
     private readonly IUnitOfWork _unitOfWork;
 
     public AffiliateApplicationService(
         IRepository<AffiliateApplication> repository,
+        INotificationService notificationService,
         IUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _notificationService = notificationService;
         _unitOfWork = unitOfWork;
     }
 
@@ -36,6 +40,14 @@ public class AffiliateApplicationService : IAffiliateApplicationService
 
         await _repository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
+
+        await _notificationService.CreateForRolesAsync(
+            new[] { AppRoles.Admin, AppRoles.Editor },
+            "Hồ sơ Affiliate mới",
+            $"{entity.FullName} vừa gửi hồ sơ đăng ký đối tác.",
+            "Affiliate",
+            "/admin/affiliates");
+
         return Map(entity);
     }
 
@@ -107,13 +119,41 @@ public class AffiliateApplicationService : IAffiliateApplicationService
 
         var nextStatus = NormalizeStatus(dto.Status);
         EnsureValidTransition(application.Status, nextStatus);
+        var statusChanged = !string.Equals(
+            application.Status,
+            nextStatus,
+            StringComparison.OrdinalIgnoreCase);
 
         application.Status = nextStatus;
         application.UpdatedAt = DateTime.UtcNow;
         _repository.Update(application);
         await _unitOfWork.SaveChangesAsync();
+
+        if (statusChanged)
+        {
+            await _notificationService.CreateForUserByEmailAsync(
+                application.Email,
+                "Cập nhật hồ sơ Affiliate",
+                BuildAffiliateStatusMessage(nextStatus),
+                "Affiliate",
+                "/affiliate");
+        }
+
         return Map(application);
     }
+
+    private static string BuildAffiliateStatusMessage(string status) =>
+        status switch
+        {
+            "Processing" =>
+                "Hồ sơ Affiliate của bạn đang được NovaCloud xử lý.",
+            "Completed" =>
+                "Hồ sơ Affiliate của bạn đã được chấp nhận và hoàn tất xử lý.",
+            "Rejected" =>
+                "Hồ sơ Affiliate của bạn đã bị từ chối. Vui lòng liên hệ NovaCloud nếu cần thêm thông tin.",
+            _ =>
+                "Hồ sơ Affiliate của bạn đã được cập nhật."
+        };
 
     private static void EnsureValidTransition(string currentStatus, string nextStatus)
     {
