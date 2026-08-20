@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, Menu, ShieldCheck } from "lucide-react";
+import { Menu, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export function AdminHeader({ onOpenSidebar }: { onOpenSidebar?: () => void }) {
   const { session } = useAuth();
@@ -24,14 +25,7 @@ export function AdminHeader({ onOpenSidebar }: { onOpenSidebar?: () => void }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          className="relative grid size-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:text-brand-600"
-          aria-label="Thông báo"
-        >
-          <Bell className="size-4" />
-          <span className="absolute right-2 top-2 size-1.5 rounded-full bg-brand-600 ring-2 ring-white" />
-        </button>
+        <NotificationBell compact />
 
         <div className="hidden h-8 w-px bg-slate-200 sm:block" />
 

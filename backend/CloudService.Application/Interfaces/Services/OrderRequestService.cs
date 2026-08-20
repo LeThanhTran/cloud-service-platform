@@ -1,6 +1,7 @@
 using CloudService.Application.DTOs.Common;
 using CloudService.Application.DTOs.OrderRequests;
 using CloudService.Application.Interfaces.Repositories;
+using CloudService.Domain.Constants;
 using CloudService.Domain.Entities;
 using CloudService.Domain.Enums;
 
@@ -14,17 +15,20 @@ public class OrderRequestService : IOrderRequestService
     private readonly IRepository<OrderRequest> _repository;
     private readonly IRepository<ServicePlan> _servicePlanRepository;
     private readonly IRepository<PlanPrice> _planPriceRepository;
+    private readonly INotificationService _notificationService;
     private readonly IUnitOfWork _unitOfWork;
 
     public OrderRequestService(
         IRepository<OrderRequest> repository,
         IRepository<ServicePlan> servicePlanRepository,
         IRepository<PlanPrice> planPriceRepository,
+        INotificationService notificationService,
         IUnitOfWork unitOfWork)
     {
         _repository = repository;
         _servicePlanRepository = servicePlanRepository;
         _planPriceRepository = planPriceRepository;
+        _notificationService = notificationService;
         _unitOfWork = unitOfWork;
     }
 
@@ -63,6 +67,13 @@ public class OrderRequestService : IOrderRequestService
 
         await _repository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
+
+        await _notificationService.CreateForRolesAsync(
+            new[] { AppRoles.Admin, AppRoles.Editor },
+            "Yêu cầu dịch vụ mới",
+            $"{entity.CustomerName} vừa đăng ký {plan.Name} ({billingCycle}).",
+            "Order",
+            "/admin/orders");
 
         return Map(entity, plan.Name);
     }
@@ -138,6 +149,7 @@ public class OrderRequestService : IOrderRequestService
 
         var newStatus = ParseStatus(dto.Status);
         EnsureValidTransition(order.Status, newStatus);
+        var statusChanged = order.Status != newStatus;
 
         order.Status = newStatus;
         order.UpdatedAt = DateTime.UtcNow;
@@ -145,8 +157,33 @@ public class OrderRequestService : IOrderRequestService
         await _unitOfWork.SaveChangesAsync();
 
         var plan = await _servicePlanRepository.GetByIdAsync(order.ServicePlanId);
-        return Map(order, plan?.Name ?? "Gói dịch vụ không còn tồn tại");
+        var planName = plan?.Name ?? "Gói dịch vụ";
+
+        if (statusChanged)
+        {
+            await _notificationService.CreateForUserByEmailAsync(
+                order.Email,
+                "Cập nhật yêu cầu dịch vụ",
+                BuildOrderStatusMessage(planName, newStatus),
+                "Order",
+                "/order");
+        }
+
+        return Map(order, planName);
     }
+
+    private static string BuildOrderStatusMessage(string planName, OrderStatus status) =>
+        status switch
+        {
+            OrderStatus.Processing =>
+                $"Yêu cầu {planName} của bạn đang được xử lý.",
+            OrderStatus.Completed =>
+                $"Yêu cầu {planName} của bạn đã được chấp nhận và hoàn tất xử lý.",
+            OrderStatus.Rejected =>
+                $"Yêu cầu {planName} của bạn đã bị từ chối. Vui lòng liên hệ NovaCloud nếu cần hỗ trợ.",
+            _ =>
+                $"Yêu cầu {planName} của bạn đã được cập nhật."
+        };
 
     private static void EnsureValidTransition(OrderStatus current, OrderStatus next)
     {

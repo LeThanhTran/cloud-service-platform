@@ -8,6 +8,7 @@ import { Brand } from "@/components/ui/brand";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
 import { useAuth } from "@/components/auth/auth-provider";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 const navigation = [
   { label: "Trang chủ", href: "/" },
@@ -44,7 +45,8 @@ export function Navbar() {
           })}
         </nav>
 
-        <div className="hidden lg:block">
+        <div className="hidden items-center gap-2.5 lg:flex">
+          {ready && session && <NotificationBell />}
           {canManage ? (
             <ButtonLink href="/admin/dashboard" className="h-10 gap-2 rounded-[10px] px-4 text-[12px]"><LayoutDashboard className="size-4" /> Quản trị</ButtonLink>
           ) : (

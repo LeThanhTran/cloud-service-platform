@@ -1,6 +1,7 @@
 using CloudService.Application.DTOs.Common;
 using CloudService.Application.DTOs.ContactRequests;
 using CloudService.Application.Interfaces.Repositories;
+using CloudService.Domain.Constants;
 using CloudService.Domain.Entities;
 
 namespace CloudService.Application.Interfaces.Services;
@@ -11,13 +12,16 @@ public class ContactRequestService : IContactRequestService
     private static readonly string[] AllowedStatuses = new[] { "New", "Processing", "Resolved" };
 
     private readonly IRepository<ContactRequest> _repository;
+    private readonly INotificationService _notificationService;
     private readonly IUnitOfWork _unitOfWork;
 
     public ContactRequestService(
         IRepository<ContactRequest> repository,
+        INotificationService notificationService,
         IUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _notificationService = notificationService;
         _unitOfWork = unitOfWork;
     }
 
@@ -35,6 +39,14 @@ public class ContactRequestService : IContactRequestService
 
         await _repository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
+
+        await _notificationService.CreateForRolesAsync(
+            new[] { AppRoles.Admin, AppRoles.Editor },
+            "Liên hệ mới",
+            $"{entity.FullName}: {entity.Subject}",
+            "Contact",
+            "/admin/contacts");
+
         return Map(entity);
     }
 
@@ -108,14 +120,39 @@ public class ContactRequestService : IContactRequestService
 
         var nextStatus = NormalizeStatus(dto.Status);
         EnsureValidTransition(request.Status, nextStatus);
+        var statusChanged = !string.Equals(
+            request.Status,
+            nextStatus,
+            StringComparison.OrdinalIgnoreCase);
 
         request.Status = nextStatus;
         request.UpdatedAt = DateTime.UtcNow;
         _repository.Update(request);
         await _unitOfWork.SaveChangesAsync();
 
+        if (statusChanged)
+        {
+            await _notificationService.CreateForUserByEmailAsync(
+                request.Email,
+                "Cập nhật yêu cầu liên hệ",
+                BuildContactStatusMessage(nextStatus),
+                "Contact",
+                "/contact");
+        }
+
         return Map(request);
     }
+
+    private static string BuildContactStatusMessage(string status) =>
+        status switch
+        {
+            "Processing" =>
+                "Yêu cầu liên hệ của bạn đang được NovaCloud xử lý.",
+            "Resolved" =>
+                "Yêu cầu liên hệ của bạn đã được NovaCloud xử lý xong.",
+            _ =>
+                "Yêu cầu liên hệ của bạn đã được cập nhật."
+        };
 
     private static void EnsureValidTransition(string currentStatus, string nextStatus)
     {

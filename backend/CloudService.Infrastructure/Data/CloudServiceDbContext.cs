@@ -30,6 +30,8 @@ public class CloudServiceDbContext : DbContext
 
     public DbSet<ContactRequest> ContactRequests => Set<ContactRequest>();
 
+    public DbSet<Notification> Notifications => Set<Notification>();
+
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -72,6 +74,34 @@ public class CloudServiceDbContext : DbContext
 
             entity.HasIndex(x => x.Status);
             entity.HasIndex(x => x.CreatedAt);
+        });
+
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.Property(x => x.Title)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(x => x.Message)
+                .HasMaxLength(1000)
+                .IsRequired();
+
+            entity.Property(x => x.Type)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(x => x.Link)
+                .HasMaxLength(300)
+                .IsRequired();
+
+            entity.HasIndex(x => x.UserId);
+            entity.HasIndex(x => new { x.UserId, x.IsRead });
+
+            entity.HasOne<AppUser>()
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<AppUser>(entity =>
