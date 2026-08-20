@@ -3,9 +3,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  BadgeDollarSign,
+  ExternalLink,
   KeyRound,
   LayoutDashboard,
   LogOut,
+  Percent,
+  Server,
   ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
@@ -18,6 +22,24 @@ const navigation = [
     label: "Dashboard",
     href: "/admin/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    label: "Gói dịch vụ",
+    href: "/admin/services",
+    icon: Server,
+    adminOnly: true,
+  },
+  {
+    label: "Bảng giá",
+    href: "/admin/pricing",
+    icon: BadgeDollarSign,
+    adminOnly: true,
+  },
+  {
+    label: "Khuyến mãi",
+    href: "/admin/promotions",
+    icon: Percent,
+    adminOnly: true,
   },
   {
     label: "Bảo mật tài khoản",
@@ -58,27 +80,39 @@ export function AdminSidebar() {
       </div>
 
       <nav className="space-y-1.5" aria-label="Điều hướng quản trị">
-        {navigation.map(({ label, href, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(`${href}/`);
+        {navigation
+          .filter((item) => !item.adminOnly || session?.role === "Admin")
+          .map(({ label, href, icon: Icon }) => {
+            const active = pathname === href || pathname.startsWith(`${href}/`);
 
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-[13px] font-medium transition ${
-                active
-                  ? "bg-brand-600 text-white shadow-[0_9px_24px_rgba(11,99,246,0.28)]"
-                  : "text-blue-50/72 hover:bg-white/7 hover:text-white"
-              }`}
-            >
-              <Icon className="size-[18px]" strokeWidth={1.9} />
-              {label}
-            </Link>
-          );
-        })}
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-[13px] font-medium transition ${
+                  active
+                    ? "bg-brand-600 text-white shadow-[0_9px_24px_rgba(11,99,246,0.28)]"
+                    : "text-blue-50/72 hover:bg-white/7 hover:text-white"
+                }`}
+              >
+                <Icon className="size-[18px]" strokeWidth={1.9} />
+                {label}
+              </Link>
+            );
+          })}
       </nav>
 
-      <div className="mt-7 rounded-2xl border border-white/10 bg-white/[0.055] p-3.5">
+      <div className="mt-5 border-t border-white/10 pt-5">
+        <Link
+          href="/"
+          className="flex items-center gap-3 rounded-xl px-3.5 py-3 text-[13px] font-medium text-blue-50/72 transition hover:bg-white/7 hover:text-white"
+        >
+          <ExternalLink className="size-[18px]" />
+          Xem website
+        </Link>
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.055] p-3.5">
         <div className="flex items-center gap-2 text-xs font-semibold text-blue-50">
           <ShieldCheck className="size-4 text-sky-300" />
           Phiên bảo mật
