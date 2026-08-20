@@ -10,6 +10,8 @@ import {
   LogOut,
   Newspaper,
   Percent,
+  Handshake,
+  ShoppingCart,
   Server,
   ShieldCheck,
 } from "lucide-react";
@@ -46,6 +48,16 @@ const navigation = [
     label: "Tin tức",
     href: "/admin/news",
     icon: Newspaper,
+  },
+  {
+    label: "Yêu cầu dịch vụ",
+    href: "/admin/orders",
+    icon: ShoppingCart,
+  },
+  {
+    label: "Affiliate",
+    href: "/admin/affiliates",
+    icon: Handshake,
   },
   {
     label: "Bảo mật tài khoản",

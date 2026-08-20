@@ -44,3 +44,22 @@ export interface AffiliateApplication {
   createdAt: string;
   updatedAt?: string | null;
 }
+
+export interface PagedResult<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export type RequestStatus = "New" | "Processing" | "Completed" | "Rejected";
+export type ManagementSort = "latest" | "oldest" | "status";
+
+export interface ManagementQuery {
+  search?: string;
+  status?: string;
+  sort?: ManagementSort;
+  page?: number;
+  pageSize?: number;
+}
