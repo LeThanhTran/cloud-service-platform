@@ -159,6 +159,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Phục vụ ảnh News đã upload từ wwwroot/uploads/news.
+app.UseStaticFiles();
+
 // CORS phải chạy trước Authentication/Authorization để frontend nhận
 // được CORS headers kể cả khi API trả về 401/403.
 app.UseCors("Frontend");

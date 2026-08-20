@@ -27,3 +27,22 @@ export interface NewsQuery {
   page?: number;
   pageSize?: number;
 }
+
+export interface NewsManagementQuery {
+  search?: string;
+  category?: string;
+  isPublished?: boolean;
+  sort?: "latest" | "oldest" | "title-asc" | "title-desc" | "updated-desc";
+  page?: number;
+  pageSize?: number;
+}
+
+export interface NewsArticleInput {
+  title: string;
+  slug: string;
+  summary: string;
+  content: string;
+  thumbnailUrl: string | null;
+  category: string;
+  isPublished: boolean;
+}
