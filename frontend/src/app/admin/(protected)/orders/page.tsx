@@ -16,7 +16,7 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   exportOrderRequests,
   getOrderRequestForManagement,
@@ -50,6 +50,7 @@ export default function AdminOrdersPage() {
   const [sort, setSort] = useState<ManagementSort>("latest");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<OrderRequest | null>(null);
+  const detailRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -80,6 +81,16 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+
+  useEffect(() => {
+    if (selected && !detailLoading) {
+      detailRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [selected, detailLoading]);
 
   async function openDetail(id: string) {
     setDetailLoading(true);
@@ -267,8 +278,9 @@ export default function AdminOrdersPage() {
         <Pagination page={result.page} totalPages={result.totalPages} onPage={setPage} />
       </section>
 
-      {(selected || detailLoading) && (
-        <DetailPanel title="Chi tiết yêu cầu dịch vụ" onClose={() => setSelected(null)} loading={detailLoading}>
+      <div ref={detailRef} className="scroll-mt-24">
+        {(selected || detailLoading) && (
+          <DetailPanel title="Chi tiết yêu cầu dịch vụ" onClose={() => setSelected(null)} loading={detailLoading}>
           {selected && (
             <div className="space-y-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -295,8 +307,9 @@ export default function AdminOrdersPage() {
               <WorkflowActions status={selected.status} updating={updating} onChange={(next) => void changeStatus(next)} />
             </div>
           )}
-        </DetailPanel>
-      )}
+          </DetailPanel>
+        )}
+      </div>
     </div>
   );
 }

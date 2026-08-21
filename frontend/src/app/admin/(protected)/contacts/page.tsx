@@ -14,7 +14,7 @@ import {
   Search,
   UserRound,
 } from "lucide-react";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   getContactRequestForManagement,
   getContactRequestsForManagement,
@@ -47,6 +47,7 @@ export default function AdminContactsPage() {
   const [sort, setSort] = useState<ContactSort>("latest");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<ContactRequest | null>(null);
+  const detailRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -76,6 +77,16 @@ export default function AdminContactsPage() {
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+
+  useEffect(() => {
+    if (selected && !detailLoading) {
+      detailRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [selected, detailLoading]);
 
   async function openDetail(id: string) {
     setDetailLoading(true);
@@ -201,8 +212,9 @@ export default function AdminContactsPage() {
         <Pagination page={result.page} totalPages={result.totalPages} onPage={setPage} />
       </section>
 
-      {(selected || detailLoading) && (
-        <DetailPanel title="Chi tiết yêu cầu liên hệ" onClose={() => setSelected(null)} loading={detailLoading}>
+      <div ref={detailRef} className="scroll-mt-24">
+        {(selected || detailLoading) && (
+          <DetailPanel title="Chi tiết yêu cầu liên hệ" onClose={() => setSelected(null)} loading={detailLoading}>
           {selected && (
             <div className="space-y-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -225,8 +237,9 @@ export default function AdminContactsPage() {
               <WorkflowActions status={selected.status} updating={updating} onChange={(next) => void changeStatus(next)} />
             </div>
           )}
-        </DetailPanel>
-      )}
+          </DetailPanel>
+        )}
+      </div>
     </div>
   );
 }
