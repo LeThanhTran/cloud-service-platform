@@ -11,7 +11,8 @@ import {
   Users,
   WalletCards,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/auth-provider";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { Container } from "@/components/ui/container";
@@ -26,6 +27,7 @@ const benefits = [
 ];
 
 export default function AffiliatePage() {
+  const { session, ready } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -35,6 +37,12 @@ export default function AffiliatePage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<AffiliateApplication | null>(null);
+
+  useEffect(() => {
+    if (!ready || session?.role !== "User") return;
+    setFullName((value) => value || session.fullName);
+    setEmail(session.email);
+  }, [ready, session]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -93,7 +101,7 @@ export default function AffiliatePage() {
           <Container>
             {success ? (
               <AffiliateSuccess application={success} onReset={() => {
-                setSuccess(null); setFullName(""); setEmail(""); setPhoneNumber(""); setCompanyName(""); setWebsite(""); setNote("");
+                setSuccess(null); setFullName(session?.role === "User" ? session.fullName : ""); setEmail(session?.role === "User" ? session.email : ""); setPhoneNumber(""); setCompanyName(""); setWebsite(""); setNote("");
               }} />
             ) : (
               <div className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr]">
@@ -120,7 +128,7 @@ export default function AffiliatePage() {
 
                   <div className="mt-7 grid gap-5 sm:grid-cols-2">
                     <Field label="Họ và tên *"><input required maxLength={100} value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-admin" placeholder="Trần Minh Khoa" /></Field>
-                    <Field label="Email *"><input required type="email" maxLength={150} value={email} onChange={(e) => setEmail(e.target.value)} className="input-admin" placeholder="khoa@example.com" /></Field>
+                    <Field label="Email *"><input required readOnly={session?.role === "User"} type="email" maxLength={150} value={email} onChange={(e) => setEmail(e.target.value)} className="input-admin read-only:bg-slate-50 read-only:text-slate-500" placeholder="khoa@example.com" /></Field>
                     <Field label="Số điện thoại *"><input required maxLength={30} value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="input-admin" placeholder="0987 654 321" /></Field>
                     <Field label="Công ty"><input maxLength={150} value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="input-admin" placeholder="Khoa Digital" /></Field>
                   </div>

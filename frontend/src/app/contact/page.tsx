@@ -11,7 +11,8 @@ import {
   Send,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/auth-provider";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { Container } from "@/components/ui/container";
@@ -41,6 +42,7 @@ const contactCards = [
 ];
 
 export default function ContactPage() {
+  const { session, ready } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -49,6 +51,12 @@ export default function ContactPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<ContactRequest | null>(null);
+
+  useEffect(() => {
+    if (!ready || session?.role !== "User") return;
+    setFullName((value) => value || session.fullName);
+    setEmail(session.email);
+  }, [ready, session]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,8 +82,8 @@ export default function ContactPage() {
 
   function resetForm() {
     setSuccess(null);
-    setFullName("");
-    setEmail("");
+    setFullName(session?.role === "User" ? session.fullName : "");
+    setEmail(session?.role === "User" ? session.email : "");
     setPhoneNumber("");
     setSubject("");
     setMessage("");
@@ -160,7 +168,7 @@ export default function ContactPage() {
                       <input required maxLength={100} value={fullName} onChange={(event) => setFullName(event.target.value)} className="input-admin" placeholder="Nguyễn Văn An" />
                     </Field>
                     <Field label="Email *">
-                      <input required type="email" maxLength={150} value={email} onChange={(event) => setEmail(event.target.value)} className="input-admin" placeholder="an@example.com" />
+                      <input required readOnly={session?.role === "User"} type="email" maxLength={150} value={email} onChange={(event) => setEmail(event.target.value)} className="input-admin read-only:bg-slate-50 read-only:text-slate-500" placeholder="an@example.com" />
                     </Field>
                     <Field label="Số điện thoại">
                       <input maxLength={30} value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} className="input-admin" placeholder="0912 345 678" />

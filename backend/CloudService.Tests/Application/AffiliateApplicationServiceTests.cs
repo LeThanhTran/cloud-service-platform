@@ -64,7 +64,7 @@ public class AffiliateApplicationServiceTests
 
         Assert.Equal("Processing", result!.Status);
         _notifications.Verify(n => n.CreateForUserByEmailAsync(
-            application.Email, It.IsAny<string>(), It.IsAny<string>(), "Affiliate", "/affiliate"), Times.Once);
+            application.Email, It.IsAny<string>(), It.IsAny<string>(), "Affiliate", "/account/requests"), Times.Once);
         _emails.Verify(e => e.SendAsync(application.Email, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
     }
 

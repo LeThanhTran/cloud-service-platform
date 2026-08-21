@@ -105,6 +105,7 @@ builder.Services.AddScoped<IAffiliateApplicationService, AffiliateApplicationSer
 builder.Services.AddScoped<IContactRequestService, ContactRequestService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<ICustomerAccountService, CustomerAccountService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddScoped<IRequestTrackingService, RequestTrackingService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();

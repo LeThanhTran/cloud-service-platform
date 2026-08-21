@@ -123,7 +123,7 @@ public class OrderRequestServiceTests
         Assert.Equal("Processing", result!.Status);
         _orders.Verify(r => r.Update(order), Times.Once);
         _notifications.Verify(n => n.CreateForUserByEmailAsync(
-            order.Email, It.IsAny<string>(), It.IsAny<string>(), "Order", "/order"), Times.Once);
+            order.Email, It.IsAny<string>(), It.IsAny<string>(), "Order", "/account/requests"), Times.Once);
         _emails.Verify(e => e.SendAsync(order.Email, It.IsAny<string>(), It.Is<string>(html => html.Contains(order.ReferenceCode!))), Times.Once);
     }
 

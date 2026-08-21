@@ -160,12 +160,19 @@ public class AuthService : IAuthService
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
 
+        var securityLink = string.Equals(
+            user.Role,
+            AppRoles.User,
+            StringComparison.OrdinalIgnoreCase)
+            ? "/account/security"
+            : "/admin/settings/security";
+
         await _notificationService.CreateForUserByEmailAsync(
             user.Email,
             "Mật khẩu đã được thay đổi",
             "Mật khẩu tài khoản NovaCloud của bạn vừa được thay đổi thành công.",
             "Security",
-            "/");
+            securityLink);
 
         await _emailSender.SendAsync(
             user.Email,

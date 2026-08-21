@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutDashboard, Menu, X } from "lucide-react";
+import { LayoutDashboard, Menu, UserRound, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Brand } from "@/components/ui/brand";
@@ -25,6 +25,19 @@ export function Navbar() {
   const pathname = usePathname();
   const { session, ready } = useAuth();
   const canManage = ready && session && ["Admin", "Editor"].includes(session.role);
+  const isCustomer = ready && session?.role === "User";
+
+  const accountHref = canManage
+    ? "/admin/dashboard"
+    : isCustomer
+      ? "/account"
+      : "/login";
+
+  const accountLabel = canManage
+    ? "Quản trị"
+    : isCustomer
+      ? "Tài khoản"
+      : "Đăng nhập";
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -47,12 +60,11 @@ export function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-2.5 lg:flex">
-          {canManage && <NotificationBell />}
-          {canManage ? (
-            <ButtonLink href="/admin/dashboard" className="h-10 gap-2 rounded-[10px] px-4 text-[12px]"><LayoutDashboard className="size-4" /> Quản trị</ButtonLink>
-          ) : (
-            <ButtonLink href="/admin/login" className="h-10 rounded-[10px] px-4 text-[12px]">Đăng nhập</ButtonLink>
-          )}
+          {ready && session && <NotificationBell />}
+          <ButtonLink href={accountHref} className="h-10 gap-2 rounded-[10px] px-4 text-[12px]">
+            {canManage ? <LayoutDashboard className="size-4" /> : isCustomer ? <UserRound className="size-4" /> : null}
+            {accountLabel}
+          </ButtonLink>
         </div>
 
         <button type="button" className="grid size-10 place-items-center rounded-lg border border-line text-navy-900 lg:hidden" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label={open ? "Đóng menu" : "Mở menu"}>
@@ -68,8 +80,12 @@ export function Navbar() {
                 {item.label}
               </Link>
             ))}
-            <ButtonLink href={canManage ? "/admin/dashboard" : "/admin/login"} className="mt-3 w-full gap-2">
-              {canManage && <LayoutDashboard className="size-4" />}{canManage ? "Quản trị" : "Đăng nhập"}
+            {ready && session && (
+              <div className="mt-3 flex justify-end"><NotificationBell /></div>
+            )}
+            <ButtonLink href={accountHref} className="mt-3 w-full gap-2">
+              {canManage ? <LayoutDashboard className="size-4" /> : isCustomer ? <UserRound className="size-4" /> : null}
+              {accountLabel}
             </ButtonLink>
           </Container>
         </div>

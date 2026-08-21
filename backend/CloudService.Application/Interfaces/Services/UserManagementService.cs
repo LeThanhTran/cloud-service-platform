@@ -65,12 +65,19 @@ public class UserManagementService : IUserManagementService
 
         await _unitOfWork.SaveChangesAsync();
 
+        var destination = string.Equals(
+            normalizedRole,
+            AppRoles.User,
+            StringComparison.OrdinalIgnoreCase)
+            ? "/account"
+            : "/admin/dashboard";
+
         await _notificationService.CreateForUserByEmailAsync(
             user.Email,
             "Quyền tài khoản đã thay đổi",
             $"Quyền tài khoản của bạn đã được thay đổi từ {previousRole} sang {normalizedRole}.",
             "Security",
-            "/");
+            destination);
 
         await _emailSender.SendAsync(
             user.Email,

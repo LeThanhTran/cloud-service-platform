@@ -65,7 +65,7 @@ public class ContactRequestServiceTests
         Assert.NotNull(result);
         Assert.Equal("Processing", result!.Status);
         _notifications.Verify(n => n.CreateForUserByEmailAsync(
-            contact.Email, It.IsAny<string>(), It.IsAny<string>(), "Contact", "/contact"), Times.Once);
+            contact.Email, It.IsAny<string>(), It.IsAny<string>(), "Contact", "/account/requests"), Times.Once);
         _emails.Verify(e => e.SendAsync(contact.Email, It.IsAny<string>(), It.Is<string>(html => html.Contains(contact.ReferenceCode!))), Times.Once);
     }
 
