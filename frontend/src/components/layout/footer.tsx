@@ -3,12 +3,24 @@ import { Code, Globe, Mail, MapPin, Phone, Users } from "lucide-react";
 import { Brand } from "@/components/ui/brand";
 import { Container } from "@/components/ui/container";
 
-const productLinks = ["Cloud VPS", "Cloud Hosting", "Domain", "SSL Certificate", "Anti DDoS"];
-const supportLinks = ["Tài liệu hướng dẫn", "Câu hỏi thường gặp", "Chính sách dịch vụ", "Liên hệ hỗ trợ"];
+const productLinks = [
+  { label: "Dịch vụ Cloud", href: "/services" },
+  { label: "Bảng giá", href: "/pricing" },
+  { label: "Đặt dịch vụ", href: "/order" },
+  { label: "Chương trình Affiliate", href: "/affiliate" },
+];
+
+const supportLinks = [
+  { label: "Giới thiệu NovaCloud", href: "/about" },
+  { label: "Khách hàng", href: "/customers" },
+  { label: "Tra cứu yêu cầu", href: "/track-request" },
+  { label: "Liên hệ hỗ trợ", href: "/contact" },
+];
+
 const communityLinks = [
-  { label: "Website", icon: Globe },
-  { label: "Developer", icon: Code },
-  { label: "Cộng đồng", icon: Users },
+  { label: "Website", icon: Globe, href: "/" },
+  { label: "Giới thiệu", icon: Code, href: "/about" },
+  { label: "Khách hàng", icon: Users, href: "/customers" },
 ];
 
 export function Footer() {
@@ -21,16 +33,16 @@ export function Footer() {
             Hạ tầng Cloud mạnh mẽ, đồng hành cùng doanh nghiệp trong hành trình chuyển đổi số.
           </p>
           <div className="mt-5 flex gap-2">
-            {communityLinks.map(({ label, icon: Icon }) => (
-              <a
+            {communityLinks.map(({ label, icon: Icon, href }) => (
+              <Link
                 key={label}
-                href="#"
+                href={href}
                 aria-label={label}
                 title={label}
                 className="grid size-9 place-items-center rounded-lg border border-white/10 text-slate-400 transition hover:border-white/20 hover:bg-white/5 hover:text-white"
               >
                 <Icon className="size-4" />
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -52,8 +64,8 @@ export function Footer() {
         <Container className="flex flex-col gap-2 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 NovaCloud. All rights reserved.</p>
           <div className="flex gap-5">
-            <Link href="#" className="hover:text-slate-300">Điều khoản</Link>
-            <Link href="#" className="hover:text-slate-300">Bảo mật</Link>
+            <Link href="/about" className="hover:text-slate-300">Về NovaCloud</Link>
+            <Link href="/contact" className="hover:text-slate-300">Hỗ trợ</Link>
           </div>
         </Container>
       </div>
@@ -61,14 +73,20 @@ export function Footer() {
   );
 }
 
-function FooterColumn({ title, items }: { title: string; items: string[] }) {
+function FooterColumn({
+  title,
+  items,
+}: {
+  title: string;
+  items: { label: string; href: string }[];
+}) {
   return (
     <div>
       <p className="text-sm font-semibold text-white">{title}</p>
       <div className="mt-4 flex flex-col gap-3">
         {items.map((item) => (
-          <Link key={item} href="#" className="text-sm text-slate-400 transition hover:text-white">
-            {item}
+          <Link key={item.href} href={item.href} className="text-sm text-slate-400 transition hover:text-white">
+            {item.label}
           </Link>
         ))}
       </div>

@@ -12,9 +12,11 @@ import { NotificationBell } from "@/components/notifications/notification-bell";
 
 const navigation = [
   { label: "Trang chủ", href: "/" },
+  { label: "Giới thiệu", href: "/about" },
   { label: "Dịch vụ", href: "/services" },
   { label: "Bảng giá", href: "/pricing" },
   { label: "Tin tức", href: "/news" },
+  { label: "Khách hàng", href: "/customers" },
   { label: "Tra cứu", href: "/track-request" },
   { label: "Đối tác", href: "/affiliate" },
   { label: "Liên hệ", href: "/contact" },
@@ -47,11 +49,11 @@ export function Navbar() {
       <Container className="flex h-[66px] items-center justify-between">
         <Brand />
 
-        <nav className="hidden items-center gap-8 lg:flex" aria-label="Điều hướng chính">
+        <nav className="hidden items-center gap-5 lg:flex xl:gap-7" aria-label="Điều hướng chính">
           {navigation.map((item) => {
             const active = isActive(item.href);
             return (
-              <Link key={item.href} href={item.href} className={`relative py-6 text-[12.5px] font-medium transition ${active ? "text-brand-600" : "text-slate-600 hover:text-brand-600"}`}>
+              <Link key={item.href} href={item.href} className={`relative py-6 text-[12px] font-medium transition ${active ? "text-brand-600" : "text-slate-600 hover:text-brand-600"}`}>
                 {item.label}
                 {active && <span className="absolute inset-x-0 bottom-0 mx-auto h-[2px] w-5 rounded-full bg-brand-600" />}
               </Link>

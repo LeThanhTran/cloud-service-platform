@@ -5,6 +5,8 @@ import type {
   Promotion,
   PromotionInput,
   ServiceCategory,
+  CreateServiceCategoryInput,
+  UpdateServiceCategoryInput,
   ServicePlan,
   ServicePlanInput,
 } from "@/types/service";
@@ -27,6 +29,29 @@ async function ensureOk(response: Response, fallbackMessage: string) {
 export async function getServiceCategories() {
   const response = await apiFetch("/api/ServiceCategories", { auth: false });
   return readJson<ServiceCategory[]>(response);
+}
+
+export async function createServiceCategory(payload: CreateServiceCategoryInput) {
+  const response = await apiFetch("/api/ServiceCategories", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return readJson<ServiceCategory>(response);
+}
+
+export async function updateServiceCategory(id: string, payload: UpdateServiceCategoryInput) {
+  const response = await apiFetch(`/api/ServiceCategories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return readJson<ServiceCategory>(response);
+}
+
+export async function deleteServiceCategory(id: string) {
+  const response = await apiFetch(`/api/ServiceCategories/${id}`, {
+    method: "DELETE",
+  });
+  await ensureOk(response, "Không thể xóa danh mục dịch vụ.");
 }
 
 export async function getServicePlans() {
@@ -132,6 +157,50 @@ export async function deletePromotion(id: string) {
     method: "DELETE",
   });
   await ensureOk(response, "Không thể xóa khuyến mãi.");
+}
+
+export async function regenerateServicePlanQr(
+  servicePlanId: string,
+  format: "png" | "svg" = "png",
+) {
+  const response = await apiFetch(
+    `/api/ServicePlans/${servicePlanId}/qr-code/regenerate?format=${encodeURIComponent(format)}`,
+    {
+      method: "POST",
+      headers: {
+        Accept: format === "svg" ? "image/svg+xml" : "image/png",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const problem = await readProblemDetails(response);
+    throw new Error(problem.detail ?? problem.title ?? "Không thể sinh lại QR code.");
+  }
+
+  return response.blob();
+}
+
+export async function downloadServicePlanQr(
+  servicePlanId: string,
+  format: "png" | "svg" = "png",
+) {
+  const response = await apiFetch(
+    `/api/ServicePlans/${servicePlanId}/qr-code?format=${encodeURIComponent(format)}`,
+    {
+      auth: false,
+      headers: {
+        Accept: format === "svg" ? "image/svg+xml" : "image/png",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const problem = await readProblemDetails(response);
+    throw new Error(problem.detail ?? problem.title ?? "Không thể tải QR code.");
+  }
+
+  return response.blob();
 }
 
 export function getServicePlanQrUrl(servicePlanId: string, format = "png") {

@@ -14,6 +14,7 @@ import {
   Handshake,
   ShoppingCart,
   Server,
+  Tags,
   ScrollText,
   ShieldCheck,
 } from "lucide-react";
@@ -32,6 +33,12 @@ const navigation = [
     label: "Gói dịch vụ",
     href: "/admin/services",
     icon: Server,
+    adminOnly: true,
+  },
+  {
+    label: "Danh mục dịch vụ",
+    href: "/admin/categories",
+    icon: Tags,
     adminOnly: true,
   },
   {

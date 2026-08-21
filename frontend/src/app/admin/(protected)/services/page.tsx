@@ -1,13 +1,16 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Edit3, LoaderCircle, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import { Download, Edit3, LoaderCircle, Plus, QrCode, RefreshCw, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { AdminOnly } from "@/components/admin/admin-only";
 import {
   createServicePlan,
   deleteServicePlan,
+  downloadServicePlanQr,
   getServiceCategories,
+  getServicePlanQrUrl,
   getServicePlans,
+  regenerateServicePlanQr,
   updateServicePlan,
 } from "@/lib/service-api";
 import type { ServiceCategory, ServicePlan, ServicePlanInput } from "@/types/service";
@@ -34,6 +37,9 @@ export default function AdminServicesPage() {
   const [form, setForm] = useState<ServicePlanInput>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [qrPlan, setQrPlan] = useState<ServicePlan | null>(null);
+  const [qrPreviewUrl, setQrPreviewUrl] = useState<string | null>(null);
+  const [qrBusy, setQrBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -168,6 +174,55 @@ export default function AdminServicesPage() {
     }
   }
 
+  function closeQrModal() {
+    if (qrPreviewUrl) URL.revokeObjectURL(qrPreviewUrl);
+    setQrPreviewUrl(null);
+    setQrPlan(null);
+  }
+
+  async function handleQrRegenerate() {
+    if (!qrPlan) return;
+
+    setQrBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const blob = await regenerateServicePlanQr(qrPlan.id, "png");
+      const nextPreviewUrl = URL.createObjectURL(blob);
+      if (qrPreviewUrl) URL.revokeObjectURL(qrPreviewUrl);
+      setQrPreviewUrl(nextPreviewUrl);
+      setMessage(`Đã sinh lại QR cho ${qrPlan.name}. Ảnh xem trước đã được cập nhật.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể sinh lại QR code.");
+    } finally {
+      setQrBusy(false);
+    }
+  }
+
+  async function handleQrDownload(format: "png" | "svg") {
+    if (!qrPlan) return;
+
+    setQrBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const blob = await downloadServicePlanQr(qrPlan.id, format);
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = `service-plan-${qrPlan.id}.${format}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+      setMessage(`Đã tải QR ${format.toUpperCase()} cho ${qrPlan.name}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tải QR code.");
+    } finally {
+      setQrBusy(false);
+    }
+  }
+
   const categoryName = (id: string) => categories.find((item) => item.id === id)?.name ?? "—";
 
   return (
@@ -268,7 +323,7 @@ export default function AdminServicesPage() {
                         <td className="py-4 pr-4">{categoryName(plan.serviceCategoryId)}</td>
                         <td className="py-4 pr-4"><span className="text-[11px]">{plan.cpuCores} CPU · {plan.ramGB} GB RAM · {plan.storageGB} GB SSD</span></td>
                         <td className="py-4 pr-4"><div className="flex flex-wrap gap-1.5">{plan.isActive ? <Badge tone="green">Active</Badge> : <Badge tone="gray">Inactive</Badge>}{plan.isFeatured && <Badge tone="blue">Featured</Badge>}</div></td>
-                        <td className="py-4 text-right"><div className="flex justify-end gap-2"><IconButton title="Sửa" onClick={() => startEdit(plan)}><Edit3 className="size-4" /></IconButton><IconButton title="Xóa" danger onClick={() => void handleDelete(plan)}><Trash2 className="size-4" /></IconButton></div></td>
+                        <td className="py-4 text-right"><div className="flex justify-end gap-2"><IconButton title="QR code" onClick={() => { setQrPreviewUrl(null); setQrPlan(plan); }}><QrCode className="size-4" /></IconButton><IconButton title="Sửa" onClick={() => startEdit(plan)}><Edit3 className="size-4" /></IconButton><IconButton title="Xóa" danger onClick={() => void handleDelete(plan)}><Trash2 className="size-4" /></IconButton></div></td>
                       </tr>
                     ))}
                   </tbody>
@@ -277,6 +332,64 @@ export default function AdminServicesPage() {
             )}
           </section>
         </div>
+
+        {qrPlan && (
+          <div className="fixed inset-0 z-[80] grid place-items-center bg-navy-900/45 p-4 backdrop-blur-[2px]">
+            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_24px_80px_rgba(8,27,63,0.22)]">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-navy-900">QR gói dịch vụ</p>
+                  <p className="mt-1 text-[11px] text-slate-500">{qrPlan.name}</p>
+                </div>
+                <button type="button" onClick={closeQrModal} className="grid size-8 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-surface/70 p-5">
+                <img
+                  src={qrPreviewUrl ?? getServicePlanQrUrl(qrPlan.id)}
+                  alt={`QR code ${qrPlan.name}`}
+                  className="mx-auto aspect-square w-full max-w-[240px] object-contain"
+                />
+              </div>
+
+              <p className="mt-4 text-[11px] leading-5 text-slate-500">
+                QR trỏ đến trang chi tiết public của gói dịch vụ. Thao tác sinh lại được ghi vào Audit Log.
+              </p>
+
+              <div className="mt-5 space-y-2">
+                <button
+                  type="button"
+                  disabled={qrBusy}
+                  onClick={() => void handleQrRegenerate()}
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-xs font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+                >
+                  {qrBusy ? <LoaderCircle className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}
+                  Sinh lại QR
+                </button>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    disabled={qrBusy}
+                    onClick={() => void handleQrDownload("png")}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition hover:border-brand-200 hover:text-brand-600 disabled:opacity-60"
+                  >
+                    <Download className="size-4" /> Tải PNG
+                  </button>
+                  <button
+                    type="button"
+                    disabled={qrBusy}
+                    onClick={() => void handleQrDownload("svg")}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition hover:border-brand-200 hover:text-brand-600 disabled:opacity-60"
+                  >
+                    <Download className="size-4" /> Tải SVG
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminOnly>
   );

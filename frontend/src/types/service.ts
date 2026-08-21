@@ -6,6 +6,16 @@ export interface ServiceCategory {
   isActive: boolean;
 }
 
+export interface CreateServiceCategoryInput {
+  name: string;
+  description?: string | null;
+  slug?: string | null;
+}
+
+export interface UpdateServiceCategoryInput extends CreateServiceCategoryInput {
+  isActive: boolean;
+}
+
 export interface ServicePlan {
   id: string;
   name: string;
