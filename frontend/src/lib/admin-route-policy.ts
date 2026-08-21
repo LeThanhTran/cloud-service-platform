@@ -6,6 +6,7 @@ const ADMIN_ONLY_PREFIXES = [
   "/admin/services",
   "/admin/pricing",
   "/admin/promotions",
+  "/admin/audit-logs",
 ];
 
 export function isManagementRole(role: UserRole | string | undefined | null) {

@@ -1,6 +1,7 @@
 using CloudService.Application.DTOs.NewsArticles;
 using CloudService.Application.Interfaces.Services;
 using CloudService.Domain.Constants;
+using CloudService.WebApi.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,17 +24,18 @@ public class NewsArticlesController : ControllerBase
 
     private readonly INewsArticleService _service;
     private readonly IWebHostEnvironment _environment;
+    private readonly IAuditLogService _auditLogService;
 
     public NewsArticlesController(
         INewsArticleService service,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        IAuditLogService auditLogService)
     {
         _service = service;
         _environment = environment;
+        _auditLogService = auditLogService;
     }
 
-    // Public: chỉ trả các bài đã publish.
-    // GET: api/NewsArticles?search=cloud&category=Huong-dan&sort=latest&page=1&pageSize=6
     [HttpGet]
     [AllowAnonymous]
     public async Task<IActionResult> GetPublished(
@@ -53,7 +55,6 @@ public class NewsArticlesController : ControllerBase
         return Ok(result);
     }
 
-    // Public: chi tiết bài đã publish theo Guid.
     [HttpGet("{id:guid}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetPublishedById(Guid id)
@@ -71,7 +72,6 @@ public class NewsArticlesController : ControllerBase
         return Ok(article);
     }
 
-    // Public: frontend dùng slug để tạo URL đọc bài thân thiện.
     [HttpGet("slug/{slug}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetPublishedBySlug(string slug)
@@ -89,7 +89,6 @@ public class NewsArticlesController : ControllerBase
         return Ok(article);
     }
 
-    // Public: danh sách category dùng cho bộ lọc News frontend.
     [HttpGet("categories")]
     [AllowAnonymous]
     public async Task<IActionResult> GetCategories()
@@ -98,7 +97,6 @@ public class NewsArticlesController : ControllerBase
         return Ok(categories);
     }
 
-    // Admin/Editor: xem cả bài nháp và bài đã publish.
     [HttpGet("manage")]
     [Authorize(Roles = AppRoles.AdminOrEditor)]
     public async Task<IActionResult> GetForManagement(
@@ -120,7 +118,6 @@ public class NewsArticlesController : ControllerBase
         return Ok(result);
     }
 
-    // Admin/Editor: lấy một bài kể cả khi đang Draft.
     [HttpGet("manage/{id:guid}")]
     [Authorize(Roles = AppRoles.AdminOrEditor)]
     public async Task<IActionResult> GetByIdForManagement(Guid id)
@@ -138,8 +135,6 @@ public class NewsArticlesController : ControllerBase
         return Ok(article);
     }
 
-    // Admin/Editor: upload ảnh thumbnail cho bài viết.
-    // File được lưu trong wwwroot/uploads/news, DB chỉ lưu URL trả về.
     [HttpPost("upload-image")]
     [Authorize(Roles = AppRoles.AdminOrEditor)]
     [Consumes("multipart/form-data")]
@@ -184,6 +179,16 @@ public class NewsArticlesController : ControllerBase
     public async Task<IActionResult> Create(CreateNewsArticleDto dto)
     {
         var article = await _service.CreateAsync(dto);
+
+        await _auditLogService.LogFromUserAsync(
+            User,
+            "CREATE",
+            "NewsArticle",
+            article.Id,
+            article.Slug,
+            $"Tạo bài viết \"{article.Title}\".",
+            newValue: article.IsPublished ? "Published" : "Draft");
+
         return StatusCode(StatusCodes.Status201Created, article);
     }
 
@@ -191,6 +196,7 @@ public class NewsArticlesController : ControllerBase
     [Authorize(Roles = AppRoles.AdminOrEditor)]
     public async Task<IActionResult> Update(Guid id, UpdateNewsArticleDto dto)
     {
+        var before = await _service.GetByIdForManagementAsync(id);
         var success = await _service.UpdateAsync(id, dto);
 
         if (!success)
@@ -201,6 +207,25 @@ public class NewsArticlesController : ControllerBase
                 detail: "Không tìm thấy bài viết.");
         }
 
+        var after = await _service.GetByIdForManagementAsync(id);
+
+        var auditAction =
+            before != null && after != null && !before.IsPublished && after.IsPublished
+                ? "PUBLISH"
+                : before != null && after != null && before.IsPublished && !after.IsPublished
+                    ? "UNPUBLISH"
+                    : "UPDATE";
+
+        await _auditLogService.LogFromUserAsync(
+            User,
+            auditAction,
+            "NewsArticle",
+            id,
+            after?.Slug ?? before?.Slug,
+            $"Cập nhật bài viết \"{after?.Title ?? before?.Title ?? id.ToString()}\".",
+            before == null ? null : (before.IsPublished ? "Published" : "Draft"),
+            after == null ? null : (after.IsPublished ? "Published" : "Draft"));
+
         return NoContent();
     }
 
@@ -208,6 +233,7 @@ public class NewsArticlesController : ControllerBase
     [Authorize(Roles = AppRoles.AdminOrEditor)]
     public async Task<IActionResult> Delete(Guid id)
     {
+        var before = await _service.GetByIdForManagementAsync(id);
         var success = await _service.DeleteAsync(id);
 
         if (!success)
@@ -217,6 +243,15 @@ public class NewsArticlesController : ControllerBase
                 title: "Resource Not Found",
                 detail: "Không tìm thấy bài viết.");
         }
+
+        await _auditLogService.LogFromUserAsync(
+            User,
+            "DELETE",
+            "NewsArticle",
+            id,
+            before?.Slug,
+            $"Xóa bài viết \"{before?.Title ?? id.ToString()}\".",
+            oldValue: before == null ? null : (before.IsPublished ? "Published" : "Draft"));
 
         return NoContent();
     }

@@ -1,6 +1,7 @@
 using CloudService.Application.DTOs.Promotions;
 using CloudService.Application.Interfaces.Services;
 using CloudService.Domain.Constants;
+using CloudService.WebApi.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,13 +12,16 @@ namespace CloudService.WebApi.Controllers;
 public class PromotionsController : ControllerBase
 {
     private readonly IPromotionService _service;
+    private readonly IAuditLogService _auditLogService;
 
-    public PromotionsController(IPromotionService service)
+    public PromotionsController(
+        IPromotionService service,
+        IAuditLogService auditLogService)
     {
         _service = service;
+        _auditLogService = auditLogService;
     }
 
-    // GET: api/Promotions
     [HttpGet]
     [AllowAnonymous]
     public async Task<IActionResult> GetAll()
@@ -26,7 +30,6 @@ public class PromotionsController : ControllerBase
         return Ok(result);
     }
 
-    // GET: api/Promotions/{id}
     [HttpGet("{id:guid}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetById(Guid id)
@@ -39,7 +42,6 @@ public class PromotionsController : ControllerBase
         return Ok(result);
     }
 
-    // GET: api/Promotions/by-plan/{servicePlanId}
     [HttpGet("by-plan/{servicePlanId:guid}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetByServicePlanId(Guid servicePlanId)
@@ -48,7 +50,6 @@ public class PromotionsController : ControllerBase
         return Ok(result);
     }
 
-    // POST: api/Promotions
     [HttpPost]
     [Authorize(Roles = AppRoles.Admin)]
     public async Task<IActionResult> Create(
@@ -56,36 +57,66 @@ public class PromotionsController : ControllerBase
     {
         var result = await _service.CreateAsync(dto);
 
+        await _auditLogService.LogFromUserAsync(
+            User,
+            "CREATE",
+            "Promotion",
+            result.Id,
+            result.Name,
+            $"Tạo khuyến mãi {result.Name}.",
+            newValue: $"Discount={result.DiscountPercent}%; Active={result.IsActive}");
+
         return CreatedAtAction(
             nameof(GetById),
             new { id = result.Id },
             result);
     }
 
-    // PUT: api/Promotions/{id}
     [HttpPut("{id:guid}")]
     [Authorize(Roles = AppRoles.Admin)]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdatePromotionDto dto)
     {
+        var before = await _service.GetByIdAsync(id);
         var success = await _service.UpdateAsync(id, dto);
 
         if (!success)
             return NotFound();
 
+        var after = await _service.GetByIdAsync(id);
+
+        await _auditLogService.LogFromUserAsync(
+            User,
+            "UPDATE",
+            "Promotion",
+            id,
+            after?.Name ?? before?.Name,
+            $"Cập nhật khuyến mãi {after?.Name ?? before?.Name ?? id.ToString()}.",
+            before == null ? null : $"Discount={before.DiscountPercent}%; Active={before.IsActive}",
+            after == null ? null : $"Discount={after.DiscountPercent}%; Active={after.IsActive}");
+
         return NoContent();
     }
 
-    // DELETE: api/Promotions/{id}
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = AppRoles.Admin)]
     public async Task<IActionResult> Delete(Guid id)
     {
+        var before = await _service.GetByIdAsync(id);
         var success = await _service.DeleteAsync(id);
 
         if (!success)
             return NotFound();
+
+        await _auditLogService.LogFromUserAsync(
+            User,
+            "DELETE",
+            "Promotion",
+            id,
+            before?.Name,
+            $"Xóa khuyến mãi {before?.Name ?? id.ToString()}.",
+            oldValue: before == null ? null : $"Discount={before.DiscountPercent}%; Active={before.IsActive}");
 
         return NoContent();
     }

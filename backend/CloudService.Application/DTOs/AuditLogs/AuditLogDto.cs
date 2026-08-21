@@ -1,18 +1,18 @@
-using CloudService.Domain.Common;
+namespace CloudService.Application.DTOs.AuditLogs;
 
-namespace CloudService.Domain.Entities;
-
-public class AuditLog : BaseEntity
+public class AuditLogDto
 {
+    public Guid Id { get; set; }
+
     public string UserId { get; set; } = string.Empty;
 
-    public string? UserName { get; set; }
+    public string UserName { get; set; } = string.Empty;
 
-    public string? UserRole { get; set; }
+    public string UserRole { get; set; } = string.Empty;
 
     public string Action { get; set; } = string.Empty;
 
-    public string? EntityType { get; set; }
+    public string EntityType { get; set; } = string.Empty;
 
     public Guid? EntityId { get; set; }
 
@@ -23,4 +23,6 @@ public class AuditLog : BaseEntity
     public string? OldValue { get; set; }
 
     public string? NewValue { get; set; }
+
+    public DateTime CreatedAt { get; set; }
 }

@@ -14,6 +14,7 @@ import {
   Handshake,
   ShoppingCart,
   Server,
+  ScrollText,
   ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
@@ -64,6 +65,12 @@ const navigation = [
     label: "Liên hệ",
     href: "/admin/contacts",
     icon: MessageSquare,
+  },
+  {
+    label: "Nhật ký hệ thống",
+    href: "/admin/audit-logs",
+    icon: ScrollText,
+    adminOnly: true,
   },
   {
     label: "Bảo mật tài khoản",

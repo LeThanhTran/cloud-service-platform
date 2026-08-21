@@ -1,6 +1,7 @@
 using CloudService.Application.DTOs.OrderRequests;
 using CloudService.Application.Interfaces.Services;
 using CloudService.Domain.Constants;
+using CloudService.WebApi.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,25 +13,36 @@ public class OrderRequestsController : ControllerBase
 {
     private readonly IOrderRequestService _service;
     private readonly IOrderExcelExportService _excelExportService;
+    private readonly IAuditLogService _auditLogService;
 
     public OrderRequestsController(
         IOrderRequestService service,
-        IOrderExcelExportService excelExportService)
+        IOrderExcelExportService excelExportService,
+        IAuditLogService auditLogService)
     {
         _service = service;
         _excelExportService = excelExportService;
+        _auditLogService = auditLogService;
     }
 
-    // Public: khách hàng gửi yêu cầu đăng ký dịch vụ.
     [HttpPost]
     [AllowAnonymous]
     public async Task<IActionResult> Create(CreateOrderRequestDto dto)
     {
         var order = await _service.CreateAsync(dto);
+
+        await _auditLogService.LogGuestAsync(
+            order.CustomerName,
+            "CREATE",
+            "OrderRequest",
+            order.Id,
+            order.ReferenceCode,
+            $"Khách gửi yêu cầu đăng ký {order.ServicePlanName} ({order.BillingCycle}).",
+            newValue: order.Status);
+
         return StatusCode(StatusCodes.Status201Created, order);
     }
 
-    // Admin/Editor: danh sách đơn hàng, hỗ trợ tìm kiếm/lọc/phân trang.
     [HttpGet("manage")]
     [Authorize(Roles = AppRoles.AdminOrEditor)]
     public async Task<IActionResult> GetForManagement(
@@ -54,6 +66,12 @@ public class OrderRequestsController : ControllerBase
         var content = await _excelExportService.ExportAsync(search, status, sort);
         var fileName = $"NovaCloud_Orders_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
 
+        await _auditLogService.LogFromUserAsync(
+            User,
+            "EXPORT",
+            "OrderRequest",
+            description: $"Xuất danh sách yêu cầu dịch vụ ra Excel. Search={search ?? "(trống)"}, Status={status ?? "Tất cả"}, Sort={sort ?? "latest"}.");
+
         return File(
             content,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -75,9 +93,25 @@ public class OrderRequestsController : ControllerBase
     [Authorize(Roles = AppRoles.AdminOrEditor)]
     public async Task<IActionResult> UpdateStatus(Guid id, UpdateOrderStatusDto dto)
     {
+        var before = await _service.GetByIdAsync(id);
         var order = await _service.UpdateStatusAsync(id, dto);
+
         if (order == null)
             return Problem(statusCode: 404, title: "Resource Not Found", detail: "Không tìm thấy đơn hàng.");
+
+        if (before != null &&
+            !string.Equals(before.Status, order.Status, StringComparison.OrdinalIgnoreCase))
+        {
+            await _auditLogService.LogFromUserAsync(
+                User,
+                "UPDATE_STATUS",
+                "OrderRequest",
+                order.Id,
+                order.ReferenceCode,
+                $"Cập nhật trạng thái yêu cầu dịch vụ của {order.CustomerName}.",
+                before.Status,
+                order.Status);
+        }
 
         return Ok(order);
     }
