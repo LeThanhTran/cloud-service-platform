@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using CloudService.Application.DTOs.Auth;
 using CloudService.Application.Interfaces.Services;
+using CloudService.WebApi.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,10 +12,14 @@ namespace CloudService.WebApi.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IAuditLogService _auditLogService;
 
-    public AuthController(IAuthService authService)
+    public AuthController(
+        IAuthService authService,
+        IAuditLogService auditLogService)
     {
         _authService = authService;
+        _auditLogService = auditLogService;
     }
 
     [HttpPost("register")]
@@ -77,6 +82,13 @@ public class AuthController : ControllerBase
                 title: "Resource Not Found",
                 detail: "Không tìm thấy tài khoản.");
         }
+
+        await _auditLogService.LogFromUserAsync(
+            User,
+            "CHANGE_PASSWORD",
+            "AppUser",
+            userId,
+            description: "Tài khoản đã đổi mật khẩu thành công.");
 
         return Ok(new
         {

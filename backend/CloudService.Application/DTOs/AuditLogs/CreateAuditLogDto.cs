@@ -1,8 +1,6 @@
-using CloudService.Domain.Common;
+namespace CloudService.Application.DTOs.AuditLogs;
 
-namespace CloudService.Domain.Entities;
-
-public class AuditLog : BaseEntity
+public class CreateAuditLogDto
 {
     public string UserId { get; set; } = string.Empty;
 

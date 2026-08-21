@@ -131,6 +131,44 @@ public class CloudServiceDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.Property(x => x.UserId)
+                .HasMaxLength(64)
+                .IsRequired();
+
+            entity.Property(x => x.UserName)
+                .HasMaxLength(150);
+
+            entity.Property(x => x.UserRole)
+                .HasMaxLength(50);
+
+            entity.Property(x => x.Action)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(x => x.EntityType)
+                .HasMaxLength(80);
+
+            entity.Property(x => x.ReferenceCode)
+                .HasMaxLength(80);
+
+            entity.Property(x => x.Description)
+                .HasMaxLength(1000);
+
+            entity.Property(x => x.OldValue)
+                .HasMaxLength(500);
+
+            entity.Property(x => x.NewValue)
+                .HasMaxLength(500);
+
+            entity.HasIndex(x => x.CreatedAt);
+            entity.HasIndex(x => x.Action);
+            entity.HasIndex(x => x.EntityType);
+            entity.HasIndex(x => x.UserId);
+        });
+
         modelBuilder.Entity<AppUser>(entity =>
         {
             entity.HasIndex(x => x.Email)
