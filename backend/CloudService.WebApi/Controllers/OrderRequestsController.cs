@@ -11,10 +11,14 @@ namespace CloudService.WebApi.Controllers;
 public class OrderRequestsController : ControllerBase
 {
     private readonly IOrderRequestService _service;
+    private readonly IOrderExcelExportService _excelExportService;
 
-    public OrderRequestsController(IOrderRequestService service)
+    public OrderRequestsController(
+        IOrderRequestService service,
+        IOrderExcelExportService excelExportService)
     {
         _service = service;
+        _excelExportService = excelExportService;
     }
 
     // Public: khách hàng gửi yêu cầu đăng ký dịch vụ.
@@ -38,6 +42,22 @@ public class OrderRequestsController : ControllerBase
     {
         var result = await _service.GetForManagementAsync(search, status, sort, page, pageSize);
         return Ok(result);
+    }
+
+    [HttpGet("export")]
+    [Authorize(Roles = AppRoles.AdminOrEditor)]
+    public async Task<IActionResult> Export(
+        [FromQuery] string? search,
+        [FromQuery] string? status,
+        [FromQuery] string? sort)
+    {
+        var content = await _excelExportService.ExportAsync(search, status, sort);
+        var fileName = $"NovaCloud_Orders_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
+
+        return File(
+            content,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileName);
     }
 
     [HttpGet("manage/{id:guid}")]
