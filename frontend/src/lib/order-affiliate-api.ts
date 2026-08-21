@@ -55,6 +55,38 @@ export async function getOrderRequestsForManagement(query: ManagementQuery = {})
   return readJson<PagedResult<OrderRequest>>(response, "Không thể tải danh sách yêu cầu dịch vụ.");
 }
 
+export async function exportOrderRequests(query: ManagementQuery = {}) {
+  const params = new URLSearchParams();
+
+  if (query.search?.trim()) params.set("search", query.search.trim());
+  if (query.status?.trim()) params.set("status", query.status.trim());
+  if (query.sort) params.set("sort", query.sort);
+
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  const response = await apiFetch(`/api/OrderRequests/export${suffix}`, {
+    headers: {
+      Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    },
+  });
+
+  if (!response.ok) {
+    const problem = await readProblemDetails(response);
+    throw new Error(problem.detail ?? problem.title ?? "Không thể xuất danh sách yêu cầu dịch vụ.");
+  }
+
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  const simpleMatch = disposition.match(/filename="?([^";]+)"?/i);
+  const fileName = utf8Match?.[1]
+    ? decodeURIComponent(utf8Match[1])
+    : simpleMatch?.[1] ?? "NovaCloud_Orders.xlsx";
+
+  return {
+    blob: await response.blob(),
+    fileName,
+  };
+}
+
 export async function getOrderRequestForManagement(id: string) {
   const response = await apiFetch(`/api/OrderRequests/manage/${id}`);
   return readJson<OrderRequest>(response, "Không thể tải chi tiết yêu cầu dịch vụ.");

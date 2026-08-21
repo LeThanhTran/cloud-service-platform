@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Download,
   Eye,
   LoaderCircle,
   Mail,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import {
+  exportOrderRequests,
   getOrderRequestForManagement,
   getOrderRequestsForManagement,
   updateOrderRequestStatus,
@@ -51,6 +53,7 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -108,6 +111,37 @@ export default function AdminOrdersPage() {
     }
   }
 
+  async function handleExport() {
+    if (exporting) return;
+
+    setExporting(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const { blob, fileName } = await exportOrderRequests({
+        search,
+        status: status || undefined,
+        sort,
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+
+      setMessage(`Đã xuất ${result.totalItems.toLocaleString("vi-VN")} yêu cầu ra Excel.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể xuất file Excel.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPage(1);
@@ -121,6 +155,8 @@ export default function AdminOrdersPage() {
         title="Yêu cầu dịch vụ"
         description="Admin và Editor theo dõi, tìm kiếm và xử lý các yêu cầu đăng ký Cloud của khách hàng."
         onRefresh={() => void loadData()}
+        onExport={() => void handleExport()}
+        exporting={exporting}
       />
 
       {(message || error) && (
@@ -302,7 +338,21 @@ function nextStatuses(status: string): RequestStatus[] {
   return [];
 }
 
-function Header({ eyebrow, title, description, onRefresh }: { eyebrow: string; title: string; description: string; onRefresh: () => void }) {
+function Header({
+  eyebrow,
+  title,
+  description,
+  onRefresh,
+  onExport,
+  exporting,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  onRefresh: () => void;
+  onExport: () => void;
+  exporting: boolean;
+}) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
@@ -310,9 +360,20 @@ function Header({ eyebrow, title, description, onRefresh }: { eyebrow: string; t
         <h1 className="mt-1.5 text-[28px] font-semibold tracking-[-0.035em] text-navy-900">{title}</h1>
         <p className="mt-1 text-sm text-slate-500">{description}</p>
       </div>
-      <button type="button" onClick={onRefresh} className="inline-flex h-10 items-center gap-2 self-start rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-600 transition hover:border-brand-200 hover:text-brand-600">
-        <RefreshCw className="size-4" /> Làm mới
-      </button>
+      <div className="flex flex-wrap gap-2 self-start">
+        <button
+          type="button"
+          disabled={exporting}
+          onClick={onExport}
+          className="inline-flex h-10 items-center gap-2 rounded-xl bg-brand-600 px-3.5 text-xs font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {exporting ? <LoaderCircle className="size-4 animate-spin" /> : <Download className="size-4" />}
+          {exporting ? "Đang xuất..." : "Xuất Excel"}
+        </button>
+        <button type="button" onClick={onRefresh} className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-600 transition hover:border-brand-200 hover:text-brand-600">
+          <RefreshCw className="size-4" /> Làm mới
+        </button>
+      </div>
     </div>
   );
 }
