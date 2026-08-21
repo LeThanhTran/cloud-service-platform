@@ -4,9 +4,11 @@ const MANAGEMENT_ROLES = new Set<UserRole>(["Admin", "Editor"]);
 
 const ADMIN_ONLY_PREFIXES = [
   "/admin/services",
+  "/admin/categories",
   "/admin/pricing",
   "/admin/promotions",
   "/admin/audit-logs",
+  "/admin/users",
 ];
 
 export function isManagementRole(role: UserRole | string | undefined | null) {

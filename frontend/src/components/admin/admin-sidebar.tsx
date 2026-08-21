@@ -15,6 +15,7 @@ import {
   ShoppingCart,
   Server,
   Tags,
+  UsersRound,
   ScrollText,
   ShieldCheck,
 } from "lucide-react";
@@ -74,6 +75,12 @@ const navigation = [
     icon: MessageSquare,
   },
   {
+    label: "Tài khoản & phân quyền",
+    href: "/admin/users",
+    icon: UsersRound,
+    adminOnly: true,
+  },
+  {
     label: "Nhật ký hệ thống",
     href: "/admin/audit-logs",
     icon: ScrollText,
@@ -111,65 +118,71 @@ export function AdminSidebar() {
   }
 
   return (
-    <aside className="flex h-full w-[260px] flex-col bg-[linear-gradient(180deg,#071a3d_0%,#092655_100%)] px-4 py-5 text-white shadow-[18px_0_45px_rgba(8,27,63,0.08)]">
-      <div className="px-2 pb-7">
+    <aside className="flex h-full w-[228px] flex-col overflow-hidden bg-[linear-gradient(180deg,#071a3d_0%,#092655_100%)] px-3 py-4 text-white shadow-[14px_0_36px_rgba(8,27,63,0.07)]">
+      <div className="shrink-0 px-2 pb-3.5">
         <Brand inverse />
-        <p className="mt-2 text-[11px] text-blue-100/65">Management Console</p>
+        <p className="mt-1.5 text-[10px] text-blue-100/55">Management Console</p>
       </div>
 
-      <nav className="space-y-1.5" aria-label="Điều hướng quản trị">
-        {navigation
-          .filter((item) => !item.adminOnly || session?.role === "Admin")
-          .map(({ label, href, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`);
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.16)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb:hover]:bg-white/25 [&::-webkit-scrollbar-track]:bg-transparent">
+        <nav className="space-y-0.5" aria-label="Điều hướng quản trị">
+          {navigation
+            .filter((item) => !item.adminOnly || session?.role === "Admin")
+            .map(({ label, href, icon: Icon }) => {
+              const active = pathname === href || pathname.startsWith(`${href}/`);
 
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-[13px] font-medium transition ${
-                  active
-                    ? "bg-brand-600 text-white shadow-[0_9px_24px_rgba(11,99,246,0.28)]"
-                    : "text-blue-50/72 hover:bg-white/7 hover:text-white"
-                }`}
-              >
-                <Icon className="size-[18px]" strokeWidth={1.9} />
-                {label}
-              </Link>
-            );
-          })}
-      </nav>
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex min-h-10 items-center gap-2.5 rounded-lg px-3 py-2.5 text-[12.5px] font-medium transition ${
+                    active
+                      ? "bg-brand-600 text-white shadow-[0_7px_18px_rgba(11,99,246,0.22)]"
+                      : "text-blue-50/70 hover:bg-white/[0.065] hover:text-white"
+                  }`}
+                >
+                  <Icon className="size-[16px] shrink-0" strokeWidth={1.85} />
+                  <span className="truncate">{label}</span>
+                </Link>
+              );
+            })}
+        </nav>
 
-      <div className="mt-5 border-t border-white/10 pt-5">
-        <Link
-          href="/"
-          className="flex items-center gap-3 rounded-xl px-3.5 py-3 text-[13px] font-medium text-blue-50/72 transition hover:bg-white/7 hover:text-white"
-        >
-          <ExternalLink className="size-[18px]" />
-          Xem website
-        </Link>
-      </div>
-
-      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.055] p-3.5">
-        <div className="flex items-center gap-2 text-xs font-semibold text-blue-50">
-          <ShieldCheck className="size-4 text-sky-300" />
-          Phiên bảo mật
+        <div className="mt-3 border-t border-white/10 pt-3">
+          <Link
+            href="/"
+            className="flex min-h-10 items-center gap-2.5 rounded-lg px-3 py-2.5 text-[12.5px] font-medium text-blue-50/70 transition hover:bg-white/[0.065] hover:text-white"
+          >
+            <ExternalLink className="size-[16px] shrink-0" />
+            <span>Xem website</span>
+          </Link>
         </div>
-        <p className="mt-2 truncate text-[11px] text-blue-100/65">{session?.email}</p>
-        <span className="mt-2 inline-flex rounded-full bg-emerald-400/12 px-2 py-1 text-[10px] font-semibold text-emerald-300 ring-1 ring-emerald-300/15">
-          {session?.role}
-        </span>
+
+        <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.045] px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2 text-[11px] font-semibold text-blue-50">
+              <ShieldCheck className="size-3.5 shrink-0 text-sky-300" />
+              <span className="truncate">Phiên bảo mật</span>
+            </div>
+            <span className="shrink-0 rounded-full bg-emerald-400/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-300 ring-1 ring-emerald-300/15">
+              {session?.role}
+            </span>
+          </div>
+          <p className="mt-1 truncate pl-[22px] text-[9.5px] text-blue-100/50">{session?.email}</p>
+        </div>
       </div>
 
-      <button
-        type="button"
-        onClick={handleLogout}
-        disabled={loggingOut}
-        className="mt-auto flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-[13px] font-medium text-blue-50/72 transition hover:bg-white/7 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        <LogOut className="size-[18px]" />
-        {loggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
-      </button>
+      <div className="mt-2 shrink-0 border-t border-white/10 pt-2">
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[12.5px] font-medium text-blue-50/70 transition hover:bg-white/[0.065] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <LogOut className="size-[16px] shrink-0" />
+          {loggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
+        </button>
+      </div>
     </aside>
   );
 }

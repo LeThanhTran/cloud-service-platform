@@ -15,7 +15,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   return (
-    <div className="min-h-screen bg-[#f4f7fb] text-navy-900">
+    <div className="admin-shell min-h-screen bg-[#f4f7fb] text-navy-900">
       <div className="fixed inset-y-0 left-0 z-40 hidden lg:block">
         <AdminSidebar />
       </div>
@@ -27,12 +27,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             onClick={() => setMobileOpen(false)}
             aria-label="Đóng menu"
           />
-          <div className="relative h-full w-[280px] max-w-[86vw]">
+          <div className="relative h-full w-[228px] max-w-[86vw]">
             <AdminSidebar />
             <button
               type="button"
               onClick={() => setMobileOpen(false)}
-              className="absolute right-3 top-3 grid size-8 place-items-center rounded-lg bg-white/8 text-white"
+              className="absolute right-2.5 top-2.5 grid size-7 place-items-center rounded-lg bg-white/8 text-white"
               aria-label="Đóng menu"
             >
               <X className="size-4" />
@@ -41,7 +41,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <div className="lg:pl-[260px]">
+      <div className="lg:pl-[228px]">
         <AdminHeader onOpenSidebar={() => setMobileOpen(true)} />
         <main className="mx-auto w-full max-w-[1500px] px-4 py-5 sm:px-6 lg:px-7 lg:py-7">
           {children}

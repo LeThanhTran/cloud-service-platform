@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -153,6 +154,56 @@ builder.Services
             IssuerSigningKey =
                 new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(key))
+        };
+
+        // Không chỉ tin role/active state đã nằm trong JWT cũ.
+        // Mỗi request xác nhận lại tài khoản hiện tại để thao tác đổi quyền
+        // hoặc khóa tài khoản có hiệu lực ngay, không phải chờ token hết hạn.
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var userIdValue =
+                    context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (!Guid.TryParse(userIdValue, out var userId))
+                {
+                    context.Fail("Không xác định được tài khoản từ access token.");
+                    return;
+                }
+
+                var dbContext =
+                    context.HttpContext.RequestServices
+                        .GetRequiredService<CloudServiceDbContext>();
+
+                var currentUser = await dbContext.AppUsers
+                    .AsNoTracking()
+                    .Where(user => user.Id == userId)
+                    .Select(user => new
+                    {
+                        user.IsActive,
+                        user.Role
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (currentUser == null || !currentUser.IsActive)
+                {
+                    context.Fail("Tài khoản không còn hoạt động.");
+                    return;
+                }
+
+                var tokenRole =
+                    context.Principal?.FindFirstValue(ClaimTypes.Role);
+
+                if (!string.Equals(
+                        currentUser.Role,
+                        tokenRole,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Fail(
+                        "Quyền tài khoản đã thay đổi. Vui lòng làm mới phiên hoặc đăng nhập lại.");
+                }
+            }
         };
     });
 

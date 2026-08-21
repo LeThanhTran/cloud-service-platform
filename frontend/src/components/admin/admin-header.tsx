@@ -8,7 +8,7 @@ export function AdminHeader({ onOpenSidebar }: { onOpenSidebar?: () => void }) {
   const { session } = useAuth();
 
   return (
-    <header className="sticky top-0 z-30 flex h-[68px] items-center justify-between border-b border-slate-200/80 bg-white/92 px-5 backdrop-blur-xl lg:px-7">
+    <header className="sticky top-0 z-30 flex h-[76px] items-center justify-between border-b border-slate-200/80 bg-white/92 px-5 backdrop-blur-xl lg:px-8">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -19,8 +19,8 @@ export function AdminHeader({ onOpenSidebar }: { onOpenSidebar?: () => void }) {
           <Menu className="size-4.5" />
         </button>
         <div>
-          <p className="text-[13px] font-semibold text-navy-900">NovaCloud Console</p>
-          <p className="text-[11px] text-slate-500">Quản trị hệ thống</p>
+          <p className="text-[19px] font-bold tracking-[-0.02em] text-navy-900">NovaCloud Console</p>
+          <p className="mt-0.5 text-[13px] text-slate-500">Quản trị hệ thống</p>
         </div>
       </div>
 
@@ -34,10 +34,10 @@ export function AdminHeader({ onOpenSidebar }: { onOpenSidebar?: () => void }) {
             <ShieldCheck className="size-4.5" />
           </div>
           <div className="hidden sm:block">
-            <p className="max-w-40 truncate text-xs font-semibold text-navy-900">
+            <p className="max-w-44 truncate text-[13.5px] font-semibold text-navy-900">
               {session?.fullName}
             </p>
-            <p className="text-[10.5px] text-slate-500">{session?.role}</p>
+            <p className="text-[11.5px] text-slate-500">{session?.role}</p>
           </div>
         </div>
       </div>
