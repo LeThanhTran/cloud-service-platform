@@ -1,5 +1,6 @@
 using CloudService.Application.DTOs.AffiliateApplications;
 using CloudService.Application.DTOs.Common;
+using CloudService.Application.Emails;
 using CloudService.Application.Interfaces.Repositories;
 using CloudService.Domain.Constants;
 using CloudService.Domain.Entities;
@@ -13,15 +14,18 @@ public class AffiliateApplicationService : IAffiliateApplicationService
 
     private readonly IRepository<AffiliateApplication> _repository;
     private readonly INotificationService _notificationService;
+    private readonly IEmailSender _emailSender;
     private readonly IUnitOfWork _unitOfWork;
 
     public AffiliateApplicationService(
         IRepository<AffiliateApplication> repository,
         INotificationService notificationService,
+        IEmailSender emailSender,
         IUnitOfWork unitOfWork)
     {
         _repository = repository;
         _notificationService = notificationService;
+        _emailSender = emailSender;
         _unitOfWork = unitOfWork;
     }
 
@@ -131,12 +135,23 @@ public class AffiliateApplicationService : IAffiliateApplicationService
 
         if (statusChanged)
         {
+            var statusMessage = BuildAffiliateStatusMessage(nextStatus);
+
             await _notificationService.CreateForUserByEmailAsync(
                 application.Email,
                 "Cập nhật hồ sơ Affiliate",
-                BuildAffiliateStatusMessage(nextStatus),
+                statusMessage,
                 "Affiliate",
                 "/affiliate");
+
+            await _emailSender.SendAsync(
+                application.Email,
+                "[NovaCloud] Cập nhật trạng thái hồ sơ Affiliate",
+                EmailTemplates.AffiliateStatus(
+                    application.FullName,
+                    application.Id,
+                    nextStatus,
+                    statusMessage));
         }
 
         return Map(application);

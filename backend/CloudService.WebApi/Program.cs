@@ -8,6 +8,7 @@ using CloudService.Infrastructure.Data;
 using CloudService.Infrastructure.Repositories;
 using CloudService.WebApi.ErrorHandling;
 using CloudService.WebApi.Services;
+using CloudService.WebApi.Services.Email;
 using CloudService.WebApi.Services.QrCodes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -102,6 +103,7 @@ builder.Services.AddScoped<IContactRequestService, ContactRequestService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddSingleton<IQrCodeGeneratorFactory, QrCodeGeneratorFactory>();
 
 // Authentication Services

@@ -1,4 +1,5 @@
 using CloudService.Application.DTOs.Users;
+using CloudService.Application.Emails;
 using CloudService.Application.Interfaces;
 using CloudService.Application.Interfaces.Repositories;
 using CloudService.Domain.Constants;
@@ -9,13 +10,19 @@ namespace CloudService.Application.Interfaces.Services;
 public class UserManagementService : IUserManagementService
 {
     private readonly IRepository<AppUser> _userRepository;
+    private readonly INotificationService _notificationService;
+    private readonly IEmailSender _emailSender;
     private readonly IUnitOfWork _unitOfWork;
 
     public UserManagementService(
         IRepository<AppUser> userRepository,
+        INotificationService notificationService,
+        IEmailSender emailSender,
         IUnitOfWork unitOfWork)
     {
         _userRepository = userRepository;
+        _notificationService = notificationService;
+        _emailSender = emailSender;
         _unitOfWork = unitOfWork;
     }
 
@@ -44,10 +51,34 @@ public class UserManagementService : IUserManagementService
         if (user == null)
             return null;
 
+        var previousRole = user.Role;
+        var roleChanged = !string.Equals(
+            previousRole,
+            normalizedRole,
+            StringComparison.OrdinalIgnoreCase);
+
+        if (!roleChanged)
+            return MapToDto(user);
+
         user.Role = normalizedRole;
         _userRepository.Update(user);
 
         await _unitOfWork.SaveChangesAsync();
+
+        await _notificationService.CreateForUserByEmailAsync(
+            user.Email,
+            "Quyền tài khoản đã thay đổi",
+            $"Quyền tài khoản của bạn đã được thay đổi từ {previousRole} sang {normalizedRole}.",
+            "Security",
+            "/");
+
+        await _emailSender.SendAsync(
+            user.Email,
+            "[NovaCloud] Quyền tài khoản của bạn đã được thay đổi",
+            EmailTemplates.RoleChanged(
+                user.FullName,
+                previousRole,
+                normalizedRole));
 
         return MapToDto(user);
     }
