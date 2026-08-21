@@ -4,6 +4,7 @@ using CloudService.Application.Interfaces.Services;
 using CloudService.WebApi.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CloudService.WebApi.Controllers;
 
@@ -23,6 +24,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Register(RegisterDto dto)
     {
         var result = await _authService.RegisterAsync(dto);
@@ -30,6 +32,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Login(LoginDto dto)
     {
         var result = await _authService.LoginAsync(dto);
