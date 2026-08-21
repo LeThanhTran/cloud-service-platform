@@ -4,6 +4,8 @@ namespace CloudService.Domain.Entities;
 
 public class ContactRequest : BaseEntity
 {
+    public string? ReferenceCode { get; set; }
+
     public string FullName { get; set; } = string.Empty;
 
     public string Email { get; set; } = string.Empty;

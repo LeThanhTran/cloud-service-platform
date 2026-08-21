@@ -18,6 +18,7 @@ import { useSearchParams } from "next/navigation";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { Container } from "@/components/ui/container";
+import { ReferenceCodeCard } from "@/components/requests/reference-code-card";
 import { createOrderRequest } from "@/lib/order-affiliate-api";
 import {
   billingCycleLabel,
@@ -318,10 +319,7 @@ function SuccessState({ order, onCreateAnother }: { order: OrderRequest; onCreat
       <p className="mt-5 text-xs font-semibold uppercase tracking-[0.15em] text-emerald-600">Gửi yêu cầu thành công</p>
       <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-navy-900">NovaCloud đã nhận đăng ký của bạn</h2>
       <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-muted">Yêu cầu cho gói <strong className="text-navy-900">{order.servicePlanName}</strong> đã được tạo với trạng thái <strong className="text-brand-600">{order.status}</strong>.</p>
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-surface/70 p-4 text-left text-xs text-muted">
-        <p>Mã yêu cầu</p>
-        <p className="mt-1 break-all font-mono text-sm font-semibold text-navy-900">{order.id}</p>
-      </div>
+      <ReferenceCodeCard code={order.referenceCode} />
       <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
         <button type="button" onClick={onCreateAnother} className="h-11 rounded-xl border border-line bg-white px-5 text-sm font-semibold text-navy-900 hover:border-brand-200 hover:bg-brand-50/60">Gửi yêu cầu khác</button>
         <Link href="/services" className="inline-flex h-11 items-center justify-center rounded-xl bg-brand-600 px-5 text-sm font-semibold text-white hover:bg-brand-700">Tiếp tục xem dịch vụ</Link>

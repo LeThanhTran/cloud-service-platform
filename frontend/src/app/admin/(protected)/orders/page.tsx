@@ -136,7 +136,7 @@ export default function AdminOrdersPage() {
             <input
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Tìm theo tên, email, số điện thoại, công ty..."
+              placeholder="Tìm theo mã, tên, email, số điện thoại, công ty..."
               className="input-admin pl-9 pr-20"
             />
             <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg bg-brand-600 px-3 py-1.5 text-[10.5px] font-semibold text-white hover:bg-brand-700">
@@ -207,7 +207,7 @@ export default function AdminOrdersPage() {
                     </td>
                     <td className="py-4 pr-4">
                       <p className="font-medium text-navy-900">{order.servicePlanName}</p>
-                      <p className="mt-1 font-mono text-[9.5px] text-slate-400">{shortId(order.id)}</p>
+                      <p className="mt-1 font-mono text-[9.5px] text-slate-400">{order.referenceCode}</p>
                     </td>
                     <td className="py-4 pr-4">{order.billingCycle === "Yearly" ? "Theo năm" : "Theo tháng"}</td>
                     <td className="py-4 pr-4">{formatDate(order.createdAt)}</td>
@@ -238,7 +238,7 @@ export default function AdminOrdersPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-lg font-semibold tracking-[-0.02em] text-navy-900">{selected.customerName}</p>
-                  <p className="mt-1 font-mono text-[10px] text-slate-400">{selected.id}</p>
+                  <p className="mt-1 font-mono text-[10px] text-slate-400">{selected.referenceCode}</p>
                 </div>
                 <StatusBadge status={selected.status} />
               </div>

@@ -10,6 +10,7 @@ export interface CreateOrderRequestInput {
 
 export interface OrderRequest {
   id: string;
+  referenceCode: string;
   customerName: string;
   email: string;
   phoneNumber: string;
@@ -34,6 +35,7 @@ export interface CreateAffiliateApplicationInput {
 
 export interface AffiliateApplication {
   id: string;
+  referenceCode: string;
   fullName: string;
   email: string;
   phoneNumber: string;

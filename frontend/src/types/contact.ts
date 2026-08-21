@@ -8,6 +8,7 @@ export interface CreateContactRequestInput {
 
 export interface ContactRequest {
   id: string;
+  referenceCode: string;
   fullName: string;
   email: string;
   phoneNumber?: string | null;

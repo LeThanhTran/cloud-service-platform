@@ -2,6 +2,7 @@ using CloudService.Application.DTOs.AffiliateApplications;
 using CloudService.Application.DTOs.Common;
 using CloudService.Application.Emails;
 using CloudService.Application.Interfaces.Repositories;
+using CloudService.Application.Utilities;
 using CloudService.Domain.Constants;
 using CloudService.Domain.Entities;
 
@@ -41,6 +42,7 @@ public class AffiliateApplicationService : IAffiliateApplicationService
             Note = NormalizeOptional(dto.Note),
             Status = "New"
         };
+        entity.ReferenceCode = ReferenceCodeGenerator.Create("AFF", entity.CreatedAt);
 
         await _repository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
@@ -48,7 +50,7 @@ public class AffiliateApplicationService : IAffiliateApplicationService
         await _notificationService.CreateForRolesAsync(
             new[] { AppRoles.Admin, AppRoles.Editor },
             "Hồ sơ Affiliate mới",
-            $"{entity.FullName} vừa gửi hồ sơ đăng ký đối tác.",
+            $"[{entity.ReferenceCode}] {entity.FullName} vừa gửi hồ sơ đăng ký đối tác.",
             "Affiliate",
             "/admin/affiliates");
 
@@ -73,7 +75,9 @@ public class AffiliateApplicationService : IAffiliateApplicationService
                 application.Email.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
                 application.PhoneNumber.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
                 (application.CompanyName?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                (application.Website?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false));
+                (application.Website?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                ReferenceCodeGenerator.GetDisplayCode("AFF", application.ReferenceCode, application.CreatedAt, application.Id)
+                    .Contains(keyword, StringComparison.OrdinalIgnoreCase));
         }
 
         if (!string.IsNullOrWhiteSpace(status))
@@ -149,7 +153,7 @@ public class AffiliateApplicationService : IAffiliateApplicationService
                 "[NovaCloud] Cập nhật trạng thái hồ sơ Affiliate",
                 EmailTemplates.AffiliateStatus(
                     application.FullName,
-                    application.Id,
+                    ReferenceCodeGenerator.GetDisplayCode("AFF", application.ReferenceCode, application.CreatedAt, application.Id),
                     nextStatus,
                     statusMessage));
         }
@@ -237,6 +241,7 @@ public class AffiliateApplicationService : IAffiliateApplicationService
     private static AffiliateApplicationDto Map(AffiliateApplication application) => new()
     {
         Id = application.Id,
+        ReferenceCode = ReferenceCodeGenerator.GetDisplayCode("AFF", application.ReferenceCode, application.CreatedAt, application.Id),
         FullName = application.FullName,
         Email = application.Email,
         PhoneNumber = application.PhoneNumber,
