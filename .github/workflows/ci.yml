@@ -78,3 +78,24 @@ jobs:
 
       - name: Build Next.js
         run: npm run build
+
+  docker:
+    name: Docker - Validate & Build
+    runs-on: ubuntu-latest
+    needs:
+      - backend
+      - frontend
+    env:
+      MSSQL_SA_PASSWORD: "NovaCloudCI@2026Strong!"
+      DEMO_USERS_PASSWORD: "123456"
+      JWT_KEY: "NovaCloud_CI_Only_JWT_Key_AtLeast_32_Characters_Long_2026"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Compose
+        run: docker compose config
+
+      - name: Build Web API image
+        run: docker compose build api

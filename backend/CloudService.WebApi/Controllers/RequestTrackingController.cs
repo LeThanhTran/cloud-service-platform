@@ -2,6 +2,7 @@ using CloudService.Application.DTOs.RequestTracking;
 using CloudService.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CloudService.WebApi.Controllers;
 
@@ -18,6 +19,7 @@ public class RequestTrackingController : ControllerBase
 
     [HttpPost("lookup")]
     [AllowAnonymous]
+    [EnableRateLimiting("request-tracking")]
     public async Task<IActionResult> Lookup(RequestTrackingLookupDto dto)
     {
         var result = await _service.LookupAsync(dto);

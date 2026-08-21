@@ -13,12 +13,14 @@ using CloudService.WebApi.Services;
 using CloudService.WebApi.Services.Email;
 using CloudService.WebApi.Services.QrCodes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,6 +54,52 @@ builder.Services.AddProblemDetails(options =>
 });
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// Rate limiting cho các endpoint công khai nhạy cảm để giảm brute force / spam.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.ContentType = "application/problem+json";
+
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new Microsoft.AspNetCore.Mvc.ProblemDetails
+            {
+                Status = StatusCodes.Status429TooManyRequests,
+                Title = "Too Many Requests",
+                Detail = "Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau ít phút."
+            },
+            cancellationToken);
+    };
+
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
+    options.AddPolicy("request-tracking", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+});
+
+// Health check xác nhận cả Web API và kết nối SQL Server.
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database");
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -123,8 +171,14 @@ builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
-var key = jwtSettings["Key"]
-    ?? throw new InvalidOperationException("JWT Key chưa được cấu hình.");
+var key = jwtSettings["Key"];
+
+if (string.IsNullOrWhiteSpace(key) || key.Length < 32)
+{
+    throw new InvalidOperationException(
+        "JWT Key chưa được cấu hình hoặc quá ngắn. " +
+        "Hãy dùng User Secrets khi chạy local hoặc biến môi trường Jwt__Key khi chạy Docker/Production.");
+}
 
 var issuer = jwtSettings["Issuer"];
 var audience = jwtSettings["Audience"];
@@ -226,9 +280,14 @@ app.UseHttpsRedirection();
 // Phục vụ ảnh News đã upload từ wwwroot/uploads/news.
 app.UseStaticFiles();
 
+// Endpoint-specific rate limiting cần routing chạy trước.
+app.UseRouting();
+
 // CORS phải chạy trước Authentication/Authorization để frontend nhận
 // được CORS headers kể cả khi API trả về 401/403.
 app.UseCors("Frontend");
+
+app.UseRateLimiter();
 
 // Authentication phải đứng trước Authorization
 app.UseAuthentication();
@@ -236,6 +295,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 // Trong môi trường Docker, SQL Server có thể cần vài giây để sẵn sàng.
 // Chỉ bật cơ chế migrate tự động khi Database:ApplyMigrationsOnStartup = true,

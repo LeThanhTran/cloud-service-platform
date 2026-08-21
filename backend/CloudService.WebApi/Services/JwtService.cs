@@ -20,8 +20,13 @@ public class JwtService : IJwtService
     {
         var jwtSettings = _configuration.GetSection("Jwt");
 
-        var key = jwtSettings["Key"]
-            ?? throw new InvalidOperationException("JWT Key chưa được cấu hình.");
+        var key = jwtSettings["Key"];
+
+        if (string.IsNullOrWhiteSpace(key) || key.Length < 32)
+        {
+            throw new InvalidOperationException(
+                "JWT Key chưa được cấu hình hoặc quá ngắn.");
+        }
 
         var issuer = jwtSettings["Issuer"];
         var audience = jwtSettings["Audience"];
