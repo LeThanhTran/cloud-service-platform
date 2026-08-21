@@ -7,4 +7,6 @@ public interface IUserManagementService
     Task<IEnumerable<UserDto>> GetAllAsync();
 
     Task<UserDto?> UpdateRoleAsync(Guid userId, UpdateUserRoleDto dto);
+
+    Task<UserDto?> UpdateStatusAsync(Guid userId, UpdateUserStatusDto dto);
 }

@@ -70,6 +70,25 @@ public static class EmailTemplates
             },
             "Nếu bạn đang đăng nhập, hãy đăng nhập lại để phiên làm việc phản ánh quyền mới nhất.");
 
+    public static string AccountStatusChanged(
+        string fullName,
+        bool isActive) =>
+        BuildLayout(
+            isActive
+                ? "Tài khoản đã được kích hoạt"
+                : "Tài khoản đã bị tạm khóa",
+            fullName,
+            isActive
+                ? "Tài khoản NovaCloud của bạn đã được quản trị viên kích hoạt lại."
+                : "Tài khoản NovaCloud của bạn đã bị quản trị viên tạm khóa. Bạn sẽ không thể đăng nhập hoặc làm mới phiên cho đến khi tài khoản được mở lại.",
+            new[]
+            {
+                ("Trạng thái", isActive ? "Đang hoạt động" : "Tạm khóa")
+            },
+            isActive
+                ? "Bạn có thể đăng nhập lại để tiếp tục sử dụng NovaCloud."
+                : "Nếu bạn cho rằng đây là nhầm lẫn, hãy liên hệ quản trị viên NovaCloud.");
+
     public static string PasswordChanged(string fullName) =>
         BuildLayout(
             "Mật khẩu tài khoản đã được thay đổi",

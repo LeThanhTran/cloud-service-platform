@@ -31,7 +31,8 @@ public class UserManagementService : IUserManagementService
         var users = await _userRepository.GetAllAsync();
 
         return users
-            .OrderBy(x => x.FullName)
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenBy(x => x.FullName)
             .Select(MapToDto)
             .ToList();
     }
@@ -60,17 +61,26 @@ public class UserManagementService : IUserManagementService
         if (!roleChanged)
             return MapToDto(user);
 
-        user.Role = normalizedRole;
-        _userRepository.Update(user);
+        if (user.IsActive &&
+            string.Equals(previousRole, AppRoles.Admin, StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(normalizedRole, AppRoles.Admin, StringComparison.OrdinalIgnoreCase))
+        {
+            await EnsureAnotherActiveAdminExistsAsync(user.Id);
+        }
 
+        user.Role = normalizedRole;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        // Role thay đổi làm phiên cũ không còn đáng tin cậy.
+        // Thu hồi refresh token; access token cũng được kiểm tra role hiện tại
+        // ở JwtBearer OnTokenValidated trong WebApi.
+        user.RefreshToken = null;
+        user.RefreshTokenExpiryTime = null;
+
+        _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
 
-        var destination = string.Equals(
-            normalizedRole,
-            AppRoles.User,
-            StringComparison.OrdinalIgnoreCase)
-            ? "/account"
-            : "/admin/dashboard";
+        var destination = GetDestinationForRole(normalizedRole);
 
         await _notificationService.CreateForUserByEmailAsync(
             user.Email,
@@ -90,6 +100,79 @@ public class UserManagementService : IUserManagementService
         return MapToDto(user);
     }
 
+    public async Task<UserDto?> UpdateStatusAsync(
+        Guid userId,
+        UpdateUserStatusDto dto)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+
+        if (user == null)
+            return null;
+
+        if (user.IsActive == dto.IsActive)
+            return MapToDto(user);
+
+        if (!dto.IsActive &&
+            string.Equals(user.Role, AppRoles.Admin, StringComparison.OrdinalIgnoreCase))
+        {
+            await EnsureAnotherActiveAdminExistsAsync(user.Id);
+        }
+
+        user.IsActive = dto.IsActive;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        // Khóa/mở tài khoản luôn thu hồi refresh token cũ.
+        user.RefreshToken = null;
+        user.RefreshTokenExpiryTime = null;
+
+        _userRepository.Update(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        if (dto.IsActive)
+        {
+            await _notificationService.CreateForUserByEmailAsync(
+                user.Email,
+                "Tài khoản đã được kích hoạt",
+                "Tài khoản NovaCloud của bạn đã được quản trị viên kích hoạt lại.",
+                "Security",
+                GetDestinationForRole(user.Role));
+        }
+
+        await _emailSender.SendAsync(
+            user.Email,
+            dto.IsActive
+                ? "[NovaCloud] Tài khoản của bạn đã được kích hoạt"
+                : "[NovaCloud] Tài khoản của bạn đã bị tạm khóa",
+            EmailTemplates.AccountStatusChanged(
+                user.FullName,
+                dto.IsActive));
+
+        return MapToDto(user);
+    }
+
+    private async Task EnsureAnotherActiveAdminExistsAsync(Guid excludedUserId)
+    {
+        var activeAdmins = (await _userRepository.GetAllAsync())
+            .Count(candidate =>
+                candidate.Id != excludedUserId &&
+                candidate.IsActive &&
+                string.Equals(
+                    candidate.Role,
+                    AppRoles.Admin,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (activeAdmins == 0)
+        {
+            throw new InvalidOperationException(
+                "Không thể thay đổi Admin cuối cùng đang hoạt động. Hãy cấp quyền Admin cho tài khoản khác trước.");
+        }
+    }
+
+    private static string GetDestinationForRole(string role) =>
+        string.Equals(role, AppRoles.User, StringComparison.OrdinalIgnoreCase)
+            ? "/account"
+            : "/admin/dashboard";
+
     private static UserDto MapToDto(AppUser user)
     {
         return new UserDto
@@ -98,7 +181,11 @@ public class UserManagementService : IUserManagementService
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role,
-            IsActive = user.IsActive
+            IsActive = user.IsActive,
+            CreatedAt = DateTime.SpecifyKind(user.CreatedAt, DateTimeKind.Utc),
+            UpdatedAt = user.UpdatedAt.HasValue
+                ? DateTime.SpecifyKind(user.UpdatedAt.Value, DateTimeKind.Utc)
+                : null
         };
     }
 }
