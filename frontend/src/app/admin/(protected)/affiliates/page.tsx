@@ -17,7 +17,7 @@ import {
   UserRound,
   XCircle,
 } from "lucide-react";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   getAffiliateApplicationForManagement,
   getAffiliateApplicationsForManagement,
@@ -48,6 +48,7 @@ export default function AdminAffiliatesPage() {
   const [sort, setSort] = useState<ManagementSort>("latest");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<AffiliateApplication | null>(null);
+  const detailRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -73,6 +74,16 @@ export default function AdminAffiliatesPage() {
   }, [page, search, sort, status]);
 
   useEffect(() => { void loadData(); }, [loadData]);
+
+
+  useEffect(() => {
+    if (selected && !detailLoading) {
+      detailRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [selected, detailLoading]);
 
   async function openDetail(id: string) {
     setDetailLoading(true);
@@ -185,8 +196,9 @@ export default function AdminAffiliatesPage() {
         <Pagination page={result.page} totalPages={result.totalPages} onPage={setPage} />
       </section>
 
-      {(selected || detailLoading) && (
-        <section className="rounded-2xl border border-brand-100 bg-white p-5 shadow-[0_14px_45px_rgba(15,23,42,0.08)] sm:p-6">
+      <div ref={detailRef} className="scroll-mt-24">
+        {(selected || detailLoading) && (
+          <section className="rounded-2xl border border-brand-100 bg-white p-5 shadow-[0_14px_45px_rgba(15,23,42,0.08)] sm:p-6">
           <div className="mb-5 flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div><p className="text-[10px] font-semibold uppercase tracking-[0.11em] text-brand-600">Affiliate Detail</p><p className="mt-1 text-sm font-semibold text-navy-900">Chi tiết hồ sơ đối tác</p></div>
             <button type="button" onClick={() => setSelected(null)} className="rounded-lg border border-slate-200 px-3 py-2 text-[10.5px] font-semibold text-slate-500 hover:text-navy-900">Đóng</button>
@@ -230,8 +242,9 @@ export default function AdminAffiliatesPage() {
               </div>
             </div>
           )}
-        </section>
-      )}
+          </section>
+        )}
+      </div>
     </div>
   );
 }
