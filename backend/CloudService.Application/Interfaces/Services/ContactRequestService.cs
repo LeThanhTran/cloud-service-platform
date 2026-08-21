@@ -2,6 +2,7 @@ using CloudService.Application.DTOs.Common;
 using CloudService.Application.DTOs.ContactRequests;
 using CloudService.Application.Emails;
 using CloudService.Application.Interfaces.Repositories;
+using CloudService.Application.Utilities;
 using CloudService.Domain.Constants;
 using CloudService.Domain.Entities;
 
@@ -40,6 +41,7 @@ public class ContactRequestService : IContactRequestService
             Message = dto.Message.Trim(),
             Status = "New"
         };
+        entity.ReferenceCode = ReferenceCodeGenerator.Create("CON", entity.CreatedAt);
 
         await _repository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
@@ -47,7 +49,7 @@ public class ContactRequestService : IContactRequestService
         await _notificationService.CreateForRolesAsync(
             new[] { AppRoles.Admin, AppRoles.Editor },
             "Liên hệ mới",
-            $"{entity.FullName}: {entity.Subject}",
+            $"[{entity.ReferenceCode}] {entity.FullName}: {entity.Subject}",
             "Contact",
             "/admin/contacts");
 
@@ -72,7 +74,9 @@ public class ContactRequestService : IContactRequestService
                 request.Email.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
                 (request.PhoneNumber?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false) ||
                 request.Subject.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                request.Message.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+                request.Message.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                ReferenceCodeGenerator.GetDisplayCode("CON", request.ReferenceCode, request.CreatedAt, request.Id)
+                    .Contains(keyword, StringComparison.OrdinalIgnoreCase));
         }
 
         if (!string.IsNullOrWhiteSpace(status))
@@ -150,7 +154,7 @@ public class ContactRequestService : IContactRequestService
                 "[NovaCloud] Cập nhật yêu cầu liên hệ",
                 EmailTemplates.ContactStatus(
                     request.FullName,
-                    request.Id,
+                    ReferenceCodeGenerator.GetDisplayCode("CON", request.ReferenceCode, request.CreatedAt, request.Id),
                     request.Subject,
                     nextStatus,
                     statusMessage));
@@ -237,6 +241,7 @@ public class ContactRequestService : IContactRequestService
     private static ContactRequestDto Map(ContactRequest request) => new()
     {
         Id = request.Id,
+        ReferenceCode = ReferenceCodeGenerator.GetDisplayCode("CON", request.ReferenceCode, request.CreatedAt, request.Id),
         FullName = request.FullName,
         Email = request.Email,
         PhoneNumber = request.PhoneNumber,

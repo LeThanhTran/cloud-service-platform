@@ -47,8 +47,35 @@ public class CloudServiceDbContext : DbContext
             .HasPrecision(5, 2);
 
 
+        modelBuilder.Entity<OrderRequest>(entity =>
+        {
+            entity.Property(x => x.ReferenceCode)
+                .HasMaxLength(30);
+
+            entity.HasIndex(x => x.ReferenceCode)
+                .IsUnique()
+                .HasFilter("[ReferenceCode] IS NOT NULL");
+        });
+
+        modelBuilder.Entity<AffiliateApplication>(entity =>
+        {
+            entity.Property(x => x.ReferenceCode)
+                .HasMaxLength(30);
+
+            entity.HasIndex(x => x.ReferenceCode)
+                .IsUnique()
+                .HasFilter("[ReferenceCode] IS NOT NULL");
+        });
+
         modelBuilder.Entity<ContactRequest>(entity =>
         {
+            entity.Property(x => x.ReferenceCode)
+                .HasMaxLength(30);
+
+            entity.HasIndex(x => x.ReferenceCode)
+                .IsUnique()
+                .HasFilter("[ReferenceCode] IS NOT NULL");
+
             entity.Property(x => x.FullName)
                 .HasMaxLength(100)
                 .IsRequired();

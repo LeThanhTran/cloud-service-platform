@@ -2,6 +2,7 @@ using CloudService.Application.DTOs.Common;
 using CloudService.Application.DTOs.OrderRequests;
 using CloudService.Application.Emails;
 using CloudService.Application.Interfaces.Repositories;
+using CloudService.Application.Utilities;
 using CloudService.Domain.Constants;
 using CloudService.Domain.Entities;
 using CloudService.Domain.Enums;
@@ -68,6 +69,7 @@ public class OrderRequestService : IOrderRequestService
             ServicePlanId = plan.Id,
             Status = OrderStatus.New
         };
+        entity.ReferenceCode = ReferenceCodeGenerator.Create("ORD", entity.CreatedAt);
 
         await _repository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
@@ -75,7 +77,7 @@ public class OrderRequestService : IOrderRequestService
         await _notificationService.CreateForRolesAsync(
             new[] { AppRoles.Admin, AppRoles.Editor },
             "Yêu cầu dịch vụ mới",
-            $"{entity.CustomerName} vừa đăng ký {plan.Name} ({billingCycle}).",
+            $"[{entity.ReferenceCode}] {entity.CustomerName} vừa đăng ký {plan.Name} ({billingCycle}).",
             "Order",
             "/admin/orders");
 
@@ -99,7 +101,9 @@ public class OrderRequestService : IOrderRequestService
                 order.CustomerName.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
                 order.Email.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
                 order.PhoneNumber.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                (order.CompanyName?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false));
+                (order.CompanyName?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                ReferenceCodeGenerator.GetDisplayCode("ORD", order.ReferenceCode, order.CreatedAt, order.Id)
+                    .Contains(keyword, StringComparison.OrdinalIgnoreCase));
         }
 
         if (!string.IsNullOrWhiteSpace(status))
@@ -179,7 +183,7 @@ public class OrderRequestService : IOrderRequestService
                 "[NovaCloud] Cập nhật trạng thái yêu cầu dịch vụ",
                 EmailTemplates.OrderStatus(
                     order.CustomerName,
-                    order.Id,
+                    ReferenceCodeGenerator.GetDisplayCode("ORD", order.ReferenceCode, order.CreatedAt, order.Id),
                     planName,
                     order.BillingCycle,
                     newStatus.ToString(),
@@ -267,6 +271,7 @@ public class OrderRequestService : IOrderRequestService
     private static OrderRequestDto Map(OrderRequest order, string servicePlanName) => new()
     {
         Id = order.Id,
+        ReferenceCode = ReferenceCodeGenerator.GetDisplayCode("ORD", order.ReferenceCode, order.CreatedAt, order.Id),
         CustomerName = order.CustomerName,
         Email = order.Email,
         PhoneNumber = order.PhoneNumber,

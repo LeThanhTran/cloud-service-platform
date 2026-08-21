@@ -15,6 +15,7 @@ const navigation = [
   { label: "Dịch vụ", href: "/services" },
   { label: "Bảng giá", href: "/pricing" },
   { label: "Tin tức", href: "/news" },
+  { label: "Tra cứu", href: "/track-request" },
   { label: "Đối tác", href: "/affiliate" },
   { label: "Liên hệ", href: "/contact" },
 ];

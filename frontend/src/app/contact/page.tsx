@@ -15,6 +15,7 @@ import { useState } from "react";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { Container } from "@/components/ui/container";
+import { ReferenceCodeCard } from "@/components/requests/reference-code-card";
 import { createContactRequest } from "@/lib/contact-api";
 import type { ContactRequest } from "@/types/contact";
 
@@ -145,7 +146,7 @@ export default function ContactPage() {
 
                   <div className="mt-7 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-6 text-slate-300">
                     <Clock3 className="mb-2 size-5 text-sky-300" />
-                    Mã yêu cầu được tạo ngay sau khi gửi thành công và sẽ được dùng cho tính năng thông báo ở bước tiếp theo.
+                    Mã yêu cầu được tạo ngay sau khi gửi thành công. Hãy lưu mã cùng email để tra cứu trạng thái bất cứ lúc nào.
                   </div>
                 </aside>
 
@@ -205,10 +206,7 @@ function ContactSuccess({ request, onReset }: { request: ContactRequest; onReset
       <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-muted">
         Yêu cầu <strong className="text-navy-900">{request.subject}</strong> đã được lưu với trạng thái <strong className="text-brand-600">{request.status}</strong>.
       </p>
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-surface/70 p-4 text-left text-xs text-muted">
-        <p>Mã yêu cầu</p>
-        <p className="mt-1 break-all font-mono text-sm font-semibold text-navy-900">{request.id}</p>
-      </div>
+      <ReferenceCodeCard code={request.referenceCode} />
       <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
         <button type="button" onClick={onReset} className="h-11 rounded-xl border border-line bg-white px-5 text-sm font-semibold text-navy-900 hover:border-brand-200 hover:bg-brand-50/60">Gửi liên hệ khác</button>
         <Link href="/" className="inline-flex h-11 items-center justify-center rounded-xl bg-brand-600 px-5 text-sm font-semibold text-white hover:bg-brand-700">Về trang chủ</Link>

@@ -3,6 +3,7 @@ namespace CloudService.Application.DTOs.AffiliateApplications;
 public class AffiliateApplicationDto
 {
     public Guid Id { get; set; }
+    public string ReferenceCode { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;

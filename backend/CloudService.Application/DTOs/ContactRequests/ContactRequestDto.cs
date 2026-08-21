@@ -3,6 +3,7 @@ namespace CloudService.Application.DTOs.ContactRequests;
 public class ContactRequestDto
 {
     public Guid Id { get; set; }
+    public string ReferenceCode { get; set; } = string.Empty;
 
     public string FullName { get; set; } = string.Empty;
 

@@ -3,6 +3,7 @@ namespace CloudService.Application.DTOs.OrderRequests;
 public class OrderRequestDto
 {
     public Guid Id { get; set; }
+    public string ReferenceCode { get; set; } = string.Empty;
     public string CustomerName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;

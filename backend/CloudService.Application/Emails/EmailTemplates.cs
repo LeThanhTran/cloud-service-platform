@@ -6,7 +6,7 @@ public static class EmailTemplates
 {
     public static string OrderStatus(
         string customerName,
-        Guid orderId,
+        string referenceCode,
         string servicePlanName,
         string billingCycle,
         string status,
@@ -17,7 +17,7 @@ public static class EmailTemplates
             statusMessage,
             new[]
             {
-                ("Mã yêu cầu", orderId.ToString()),
+                ("Mã yêu cầu", referenceCode),
                 ("Dịch vụ", servicePlanName),
                 ("Chu kỳ", BillingCycleLabel(billingCycle)),
                 ("Trạng thái", OrderStatusLabel(status))
@@ -25,7 +25,7 @@ public static class EmailTemplates
 
     public static string AffiliateStatus(
         string fullName,
-        Guid applicationId,
+        string referenceCode,
         string status,
         string statusMessage) =>
         BuildLayout(
@@ -34,13 +34,13 @@ public static class EmailTemplates
             statusMessage,
             new[]
             {
-                ("Mã hồ sơ", applicationId.ToString()),
+                ("Mã hồ sơ", referenceCode),
                 ("Trạng thái", WorkflowStatusLabel(status))
             });
 
     public static string ContactStatus(
         string fullName,
-        Guid contactId,
+        string referenceCode,
         string subject,
         string status,
         string statusMessage) =>
@@ -50,7 +50,7 @@ public static class EmailTemplates
             statusMessage,
             new[]
             {
-                ("Mã liên hệ", contactId.ToString()),
+                ("Mã liên hệ", referenceCode),
                 ("Chủ đề", subject),
                 ("Trạng thái", ContactStatusLabel(status))
             });

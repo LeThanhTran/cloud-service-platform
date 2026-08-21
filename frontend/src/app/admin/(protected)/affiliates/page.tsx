@@ -132,7 +132,7 @@ export default function AdminAffiliatesPage() {
         <div className="grid gap-3 lg:grid-cols-[1fr_180px_180px]">
           <form onSubmit={submitSearch} className="relative">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Tìm theo tên, email, số điện thoại, công ty, website..." className="input-admin pl-9 pr-20" />
+            <input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Tìm theo mã, tên, email, số điện thoại, công ty, website..." className="input-admin pl-9 pr-20" />
             <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg bg-brand-600 px-3 py-1.5 text-[10.5px] font-semibold text-white hover:bg-brand-700">Tìm</button>
           </form>
 
@@ -169,7 +169,7 @@ export default function AdminAffiliatesPage() {
               <tbody className="divide-y divide-slate-100">
                 {result.items.map((application) => (
                   <tr key={application.id} className="text-xs text-slate-600">
-                    <td className="py-4 pr-4"><p className="font-semibold text-navy-900">{application.fullName}</p><p className="mt-1 text-[10.5px] text-slate-400">{application.email}</p></td>
+                    <td className="py-4 pr-4"><p className="font-semibold text-navy-900">{application.fullName}</p><p className="mt-1 text-[10.5px] text-slate-400">{application.email}</p><p className="mt-1 font-mono text-[9.5px] text-slate-400">{application.referenceCode}</p></td>
                     <td className="py-4 pr-4">{application.companyName || "—"}</td>
                     <td className="max-w-[210px] truncate py-4 pr-4">{application.website || "—"}</td>
                     <td className="py-4 pr-4">{formatDate(application.createdAt)}</td>
@@ -195,7 +195,7 @@ export default function AdminAffiliatesPage() {
           {detailLoading ? <LoadingState compact /> : selected && (
             <div className="space-y-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div><p className="text-lg font-semibold tracking-[-0.02em] text-navy-900">{selected.fullName}</p><p className="mt-1 font-mono text-[10px] text-slate-400">{selected.id}</p></div>
+                <div><p className="text-lg font-semibold tracking-[-0.02em] text-navy-900">{selected.fullName}</p><p className="mt-1 font-mono text-[10px] text-slate-400">{selected.referenceCode}</p></div>
                 <StatusBadge status={selected.status} />
               </div>
 

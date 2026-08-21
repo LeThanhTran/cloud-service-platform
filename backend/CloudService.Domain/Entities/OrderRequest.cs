@@ -5,6 +5,9 @@ namespace CloudService.Domain.Entities;
 
 public class OrderRequest : BaseEntity
 {
+    // Mã thân thiện hiển thị cho khách hàng. Null chỉ áp dụng cho dữ liệu cũ trước migration.
+    public string? ReferenceCode { get; set; }
+
     // Thông tin khách hàng
     public string CustomerName { get; set; } = string.Empty;
 
