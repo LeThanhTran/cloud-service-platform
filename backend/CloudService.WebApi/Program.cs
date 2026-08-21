@@ -3,6 +3,7 @@ using CloudService.Application.Interfaces.Repositories;
 using CloudService.Application.Interfaces.QrCodes;
 using CloudService.Application.Interfaces.Services;
 using CloudService.Application.Services;
+using CloudService.Domain.Constants;
 using CloudService.Domain.Entities;
 using CloudService.Infrastructure.Data;
 using CloudService.Infrastructure.Exports;
@@ -183,6 +184,94 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Trong môi trường Docker, SQL Server có thể cần vài giây để sẵn sàng.
+// Chỉ bật cơ chế migrate tự động khi Database:ApplyMigrationsOnStartup = true,
+// vì vậy luồng chạy local hiện tại không bị thay đổi.
+if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+    const int maxAttempts = 20;
+    var attempt = 0;
+
+    while (true)
+    {
+        attempt++;
+
+        try
+        {
+            using var scope = app.Services.CreateScope();
+            var dbContext =
+                scope.ServiceProvider.GetRequiredService<CloudServiceDbContext>();
+
+            await dbContext.Database.MigrateAsync();
+
+            app.Logger.LogInformation(
+                "Database migrations applied successfully on attempt {Attempt}.",
+                attempt);
+
+            // Development/Docker demo accounts.
+            // This is deliberately opt-in and never runs unless both the
+            // environment is Development and Database:SeedDemoUsers = true.
+            if (app.Environment.IsDevelopment() &&
+                builder.Configuration.GetValue<bool>("Database:SeedDemoUsers"))
+            {
+                var passwordHasher =
+                    scope.ServiceProvider.GetRequiredService<IPasswordHasher<AppUser>>();
+
+                var demoPassword =
+                    builder.Configuration["DemoUsers:Password"] ?? "123456";
+
+                var demoUsers = new[]
+                {
+                    new { FullName = "Admin", Email = "admin@novacloud.local", Role = AppRoles.Admin },
+                    new { FullName = "Editor", Email = "editor@novacloud.local", Role = AppRoles.Editor },
+                    new { FullName = "User", Email = "user@novacloud.local", Role = AppRoles.User }
+                };
+
+                foreach (var demo in demoUsers)
+                {
+                    var normalizedEmail = demo.Email.ToLower();
+
+                    var exists = await dbContext.AppUsers
+                        .AnyAsync(x => x.Email.ToLower() == normalizedEmail);
+
+                    if (exists)
+                        continue;
+
+                    var user = new AppUser
+                    {
+                        FullName = demo.FullName,
+                        Email = demo.Email,
+                        Role = demo.Role,
+                        IsActive = true
+                    };
+
+                    user.PasswordHash =
+                        passwordHasher.HashPassword(user, demoPassword);
+
+                    dbContext.AppUsers.Add(user);
+                }
+
+                await dbContext.SaveChangesAsync();
+
+                app.Logger.LogInformation(
+                    "Docker demo users are ready: Admin, Editor and User.");
+            }
+
+            break;
+        }
+        catch (Exception ex) when (attempt < maxAttempts)
+        {
+            app.Logger.LogWarning(
+                ex,
+                "Database is not ready yet. Migration attempt {Attempt}/{MaxAttempts} failed. Retrying in 3 seconds...",
+                attempt,
+                maxAttempts);
+
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+    }
+}
 
 app.Run();
 

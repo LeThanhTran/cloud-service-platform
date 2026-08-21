@@ -1,0 +1,47 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: novacloud-sqlserver
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+    ports:
+      - "1433:1433"
+    volumes:
+      - novacloud_sql_data:/var/opt/mssql
+    networks:
+      - novacloud-network
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/CloudService.WebApi/Dockerfile
+    container_name: novacloud-api
+    restart: unless-stopped
+    depends_on:
+      - sqlserver
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=CloudServiceDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=True"
+      Frontend__BaseUrl: "http://localhost:3000"
+      Database__ApplyMigrationsOnStartup: "true"
+      Database__SeedDemoUsers: "true"
+      DemoUsers__Password: "${DEMO_USERS_PASSWORD:-123456}"
+      Email__Enabled: "false"
+    ports:
+      - "5128:8080"
+    volumes:
+      - novacloud_news_uploads:/app/wwwroot/uploads/news
+    networks:
+      - novacloud-network
+
+volumes:
+  novacloud_sql_data:
+  novacloud_news_uploads:
+
+networks:
+  novacloud-network:
+    driver: bridge
