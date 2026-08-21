@@ -17,7 +17,7 @@ export function AdminOnly({ children }: { children: React.ReactNode }) {
         <div>
           <p className="text-sm font-semibold">Chức năng dành cho Admin</p>
           <p className="mt-1 text-xs leading-5 text-amber-800/80">
-            Editor có thể vào khu vực quản trị nhưng không được tạo, sửa hoặc xóa gói dịch vụ, bảng giá và khuyến mãi.
+            Editor có thể vào khu vực quản trị nhưng không được tạo, sửa hoặc xóa danh mục, gói dịch vụ, bảng giá và khuyến mãi.
           </p>
         </div>
       </div>
