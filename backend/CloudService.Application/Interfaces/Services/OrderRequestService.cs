@@ -1,5 +1,6 @@
 using CloudService.Application.DTOs.Common;
 using CloudService.Application.DTOs.OrderRequests;
+using CloudService.Application.Emails;
 using CloudService.Application.Interfaces.Repositories;
 using CloudService.Domain.Constants;
 using CloudService.Domain.Entities;
@@ -16,6 +17,7 @@ public class OrderRequestService : IOrderRequestService
     private readonly IRepository<ServicePlan> _servicePlanRepository;
     private readonly IRepository<PlanPrice> _planPriceRepository;
     private readonly INotificationService _notificationService;
+    private readonly IEmailSender _emailSender;
     private readonly IUnitOfWork _unitOfWork;
 
     public OrderRequestService(
@@ -23,12 +25,14 @@ public class OrderRequestService : IOrderRequestService
         IRepository<ServicePlan> servicePlanRepository,
         IRepository<PlanPrice> planPriceRepository,
         INotificationService notificationService,
+        IEmailSender emailSender,
         IUnitOfWork unitOfWork)
     {
         _repository = repository;
         _servicePlanRepository = servicePlanRepository;
         _planPriceRepository = planPriceRepository;
         _notificationService = notificationService;
+        _emailSender = emailSender;
         _unitOfWork = unitOfWork;
     }
 
@@ -161,12 +165,25 @@ public class OrderRequestService : IOrderRequestService
 
         if (statusChanged)
         {
+            var statusMessage = BuildOrderStatusMessage(planName, newStatus);
+
             await _notificationService.CreateForUserByEmailAsync(
                 order.Email,
                 "Cập nhật yêu cầu dịch vụ",
-                BuildOrderStatusMessage(planName, newStatus),
+                statusMessage,
                 "Order",
                 "/order");
+
+            await _emailSender.SendAsync(
+                order.Email,
+                "[NovaCloud] Cập nhật trạng thái yêu cầu dịch vụ",
+                EmailTemplates.OrderStatus(
+                    order.CustomerName,
+                    order.Id,
+                    planName,
+                    order.BillingCycle,
+                    newStatus.ToString(),
+                    statusMessage));
         }
 
         return Map(order, planName);

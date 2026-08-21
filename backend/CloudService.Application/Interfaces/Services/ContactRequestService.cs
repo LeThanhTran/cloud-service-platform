@@ -1,5 +1,6 @@
 using CloudService.Application.DTOs.Common;
 using CloudService.Application.DTOs.ContactRequests;
+using CloudService.Application.Emails;
 using CloudService.Application.Interfaces.Repositories;
 using CloudService.Domain.Constants;
 using CloudService.Domain.Entities;
@@ -13,15 +14,18 @@ public class ContactRequestService : IContactRequestService
 
     private readonly IRepository<ContactRequest> _repository;
     private readonly INotificationService _notificationService;
+    private readonly IEmailSender _emailSender;
     private readonly IUnitOfWork _unitOfWork;
 
     public ContactRequestService(
         IRepository<ContactRequest> repository,
         INotificationService notificationService,
+        IEmailSender emailSender,
         IUnitOfWork unitOfWork)
     {
         _repository = repository;
         _notificationService = notificationService;
+        _emailSender = emailSender;
         _unitOfWork = unitOfWork;
     }
 
@@ -132,12 +136,24 @@ public class ContactRequestService : IContactRequestService
 
         if (statusChanged)
         {
+            var statusMessage = BuildContactStatusMessage(nextStatus);
+
             await _notificationService.CreateForUserByEmailAsync(
                 request.Email,
                 "Cập nhật yêu cầu liên hệ",
-                BuildContactStatusMessage(nextStatus),
+                statusMessage,
                 "Contact",
                 "/contact");
+
+            await _emailSender.SendAsync(
+                request.Email,
+                "[NovaCloud] Cập nhật yêu cầu liên hệ",
+                EmailTemplates.ContactStatus(
+                    request.FullName,
+                    request.Id,
+                    request.Subject,
+                    nextStatus,
+                    statusMessage));
         }
 
         return Map(request);

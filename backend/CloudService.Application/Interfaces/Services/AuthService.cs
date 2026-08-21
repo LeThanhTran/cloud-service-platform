@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using CloudService.Application.DTOs.Auth;
+using CloudService.Application.Emails;
 using CloudService.Application.Interfaces.Repositories;
 using CloudService.Domain.Constants;
 using CloudService.Domain.Entities;
@@ -13,17 +14,23 @@ public class AuthService : IAuthService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPasswordHasher<AppUser> _passwordHasher;
     private readonly IJwtService _jwtService;
+    private readonly INotificationService _notificationService;
+    private readonly IEmailSender _emailSender;
 
     public AuthService(
         IRepository<AppUser> userRepository,
         IUnitOfWork unitOfWork,
         IPasswordHasher<AppUser> passwordHasher,
-        IJwtService jwtService)
+        IJwtService jwtService,
+        INotificationService notificationService,
+        IEmailSender emailSender)
     {
         _userRepository = userRepository;
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
         _jwtService = jwtService;
+        _notificationService = notificationService;
+        _emailSender = emailSender;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
@@ -152,6 +159,18 @@ public class AuthService : IAuthService
 
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
+
+        await _notificationService.CreateForUserByEmailAsync(
+            user.Email,
+            "Mật khẩu đã được thay đổi",
+            "Mật khẩu tài khoản NovaCloud của bạn vừa được thay đổi thành công.",
+            "Security",
+            "/");
+
+        await _emailSender.SendAsync(
+            user.Email,
+            "[NovaCloud] Mật khẩu tài khoản đã được thay đổi",
+            EmailTemplates.PasswordChanged(user.FullName));
 
         return true;
     }
