@@ -176,7 +176,7 @@ public class OrderRequestService : IOrderRequestService
                 "Cập nhật yêu cầu dịch vụ",
                 statusMessage,
                 "Order",
-                "/order");
+                "/account/requests");
 
             await _emailSender.SendAsync(
                 order.Email,

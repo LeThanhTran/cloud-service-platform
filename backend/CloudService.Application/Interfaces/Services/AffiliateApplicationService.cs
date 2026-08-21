@@ -146,7 +146,7 @@ public class AffiliateApplicationService : IAffiliateApplicationService
                 "Cập nhật hồ sơ Affiliate",
                 statusMessage,
                 "Affiliate",
-                "/affiliate");
+                "/account/requests");
 
             await _emailSender.SendAsync(
                 application.Email,

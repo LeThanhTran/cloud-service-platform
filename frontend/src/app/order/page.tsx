@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useAuth } from "@/components/auth/auth-provider";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { Container } from "@/components/ui/container";
@@ -55,6 +56,7 @@ export default function OrderPage() {
 }
 
 function OrderPageContent() {
+  const { session, ready } = useAuth();
   const searchParams = useSearchParams();
   const queryPlanId = searchParams.get("servicePlanId") ?? "";
   const queryBillingCycle = searchParams.get("billingCycle") ?? "";
@@ -68,6 +70,15 @@ function OrderPageContent() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<OrderRequest | null>(null);
+
+  useEffect(() => {
+    if (!ready || session?.role !== "User") return;
+    setForm((current) => ({
+      ...current,
+      customerName: current.customerName || session.fullName,
+      email: session.email,
+    }));
+  }, [ready, session]);
 
   useEffect(() => {
     let cancelled = false;
@@ -156,7 +167,11 @@ function OrderPageContent() {
         servicePlanId,
       });
       setSuccess(created);
-      setForm(emptyForm);
+      setForm(
+        session?.role === "User"
+          ? { ...emptyForm, customerName: session.fullName, email: session.email }
+          : emptyForm,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể gửi yêu cầu đăng ký dịch vụ.");
     } finally {
@@ -208,7 +223,7 @@ function OrderPageContent() {
                       <input required maxLength={100} value={form.customerName} onChange={(e) => setForm((v) => ({ ...v, customerName: e.target.value }))} className="input-admin" placeholder="Nguyễn Văn An" />
                     </Field>
                     <Field label="Email *">
-                      <input required type="email" maxLength={150} value={form.email} onChange={(e) => setForm((v) => ({ ...v, email: e.target.value }))} className="input-admin" placeholder="you@example.com" />
+                      <input required readOnly={session?.role === "User"} type="email" maxLength={150} value={form.email} onChange={(e) => setForm((v) => ({ ...v, email: e.target.value }))} className="input-admin read-only:bg-slate-50 read-only:text-slate-500" placeholder="you@example.com" />
                     </Field>
                     <Field label="Số điện thoại *">
                       <input required maxLength={30} value={form.phoneNumber} onChange={(e) => setForm((v) => ({ ...v, phoneNumber: e.target.value }))} className="input-admin" placeholder="0912 345 678" />

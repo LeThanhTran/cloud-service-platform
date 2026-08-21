@@ -147,7 +147,7 @@ public class ContactRequestService : IContactRequestService
                 "Cập nhật yêu cầu liên hệ",
                 statusMessage,
                 "Contact",
-                "/contact");
+                "/account/requests");
 
             await _emailSender.SendAsync(
                 request.Email,
