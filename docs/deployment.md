@@ -150,3 +150,65 @@ For a classroom demo:
 ```powershell
 docker compose down
 ```
+
+---
+
+## Google Cloud production-style deployment
+
+NovaCloud includes a separate `docker-compose.prod.yml` so the existing local-development Compose workflow remains unchanged.
+
+Production topology:
+
+```text
+Internet
+   |
+   v
+Nginx :80
+   |----------------------|
+   v                      v
+Next.js :3000        ASP.NET Core :8080
+                          |
+                          v
+                    SQL Server :1433
+```
+
+Only Nginx publishes a host port. SQL Server, ASP.NET Core, and Next.js stay private on the Docker network. Browser API calls use the same public origin (`/api/...`), and `/uploads/...` is proxied to ASP.NET Core for News images.
+
+### Production environment file
+
+On the VM:
+
+```bash
+cp .env.production.example .env.production
+nano .env.production
+```
+
+Set a static public URL and strong private values for `MSSQL_SA_PASSWORD`, `JWT_KEY`, and `DEMO_USERS_PASSWORD`. Never commit `.env.production`.
+
+### Validate and start
+
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yml config
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+docker compose --env-file .env.production -f docker-compose.prod.yml ps
+curl http://127.0.0.1/health
+```
+
+Expected result: SQL Server, API, frontend, and Nginx become healthy, and `/health` returns `Healthy`.
+
+### Persistence
+
+Production data is kept in named volumes:
+
+- `novacloud_prod_sql_data`
+- `novacloud_prod_news_uploads`
+
+`docker compose down` keeps these volumes. Do not use `docker compose down -v` unless you intentionally want to delete the production/demo database and uploaded News images.
+
+### Demo accounts
+
+For the university demonstration, `SEED_DEMO_USERS=true` can seed Admin, Editor, and User accounts into a fresh database. Use a strong private `DEMO_USERS_PASSWORD`. Set `SEED_DEMO_USERS=false` after the initial database has been prepared if you do not want startup to check demo seeding again.
+
+### HTTPS
+
+The initial Google Cloud validation can run over a static external IPv4 address and HTTP. Before using a real domain, point the domain to the static IP, terminate TLS at the reverse proxy, redirect HTTP to HTTPS, then update `PUBLIC_BASE_URL` to the final `https://...` origin and recreate the API container.

@@ -437,3 +437,7 @@ frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
 frontend/.vercel/
+
+# Production deployment secrets
+.env.production
+.env.production.local
