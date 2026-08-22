@@ -132,8 +132,8 @@ export default function AdminServicesPage() {
     try {
       if (!form.name.trim()) throw new Error("Tên gói dịch vụ không được để trống.");
       if (!form.serviceCategoryId) throw new Error("Hãy chọn danh mục dịch vụ.");
-      if ([form.cpuCores, form.ramGB, form.storageGB, form.bandwidthGB].some((value) => value < 0)) {
-        throw new Error("Thông số cấu hình không được nhỏ hơn 0.");
+      if ([form.cpuCores, form.ramGB, form.storageGB, form.bandwidthGB].some((value) => value <= 0)) {
+        throw new Error("CPU, RAM, Storage và Bandwidth phải lớn hơn 0.");
       }
 
       const payload = {

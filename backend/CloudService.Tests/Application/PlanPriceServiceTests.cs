@@ -110,6 +110,66 @@ public class PlanPriceServiceTests
         _unitOfWork.Verify(unit => unit.SaveChangesAsync(), Times.Once);
     }
 
+
+    [Fact]
+    public async Task UpdateAsync_UnknownServicePlan_IsRejected()
+    {
+        var price = new PlanPrice { BillingCycle = "Monthly", Price = 100000 };
+        var unknownPlanId = Guid.NewGuid();
+        _prices.Setup(repository => repository.GetByIdAsync(price.Id)).ReturnsAsync(price);
+        _plans.Setup(repository => repository.GetByIdAsync(unknownPlanId)).ReturnsAsync((ServicePlan?)null);
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            CreateService().UpdateAsync(price.Id, new UpdatePlanPriceDto
+            {
+                ServicePlanId = unknownPlanId,
+                BillingCycle = "Yearly",
+                Price = 900000,
+                IsActive = true
+            }));
+
+        _prices.Verify(repository => repository.Update(It.IsAny<PlanPrice>()), Times.Never);
+        _unitOfWork.Verify(unit => unit.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ValidPrice_UpdatesAndSaves()
+    {
+        var plan = new ServicePlan { Name = "VPS Pro" };
+        var price = new PlanPrice { ServicePlanId = Guid.NewGuid(), BillingCycle = "Monthly", Price = 100000, IsActive = true };
+        _prices.Setup(repository => repository.GetByIdAsync(price.Id)).ReturnsAsync(price);
+        _plans.Setup(repository => repository.GetByIdAsync(plan.Id)).ReturnsAsync(plan);
+
+        var result = await CreateService().UpdateAsync(price.Id, new UpdatePlanPriceDto
+        {
+            ServicePlanId = plan.Id,
+            BillingCycle = "Yearly",
+            Price = 950000,
+            IsActive = false
+        });
+
+        Assert.True(result);
+        Assert.Equal(plan.Id, price.ServicePlanId);
+        Assert.Equal("Yearly", price.BillingCycle);
+        Assert.Equal(950000, price.Price);
+        Assert.False(price.IsActive);
+        _prices.Verify(repository => repository.Update(price), Times.Once);
+        _unitOfWork.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_MissingPrice_ReturnsFalse()
+    {
+        var id = Guid.NewGuid();
+        _prices.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((PlanPrice?)null);
+
+        var result = await CreateService().DeleteAsync(id);
+
+        Assert.False(result);
+        _prices.Verify(repository => repository.Delete(It.IsAny<PlanPrice>()), Times.Never);
+        _unitOfWork.Verify(unit => unit.SaveChangesAsync(), Times.Never);
+    }
+
     private PlanPriceService CreateService() => new(
         _prices.Object,
         _plans.Object,
