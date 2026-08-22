@@ -148,6 +148,168 @@ public class OrderRequestServiceTests
         _unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
     }
 
+
+    [Fact]
+    public async Task CreateAsync_WhenActivePriceMissing_ThrowsInvalidOperationException()
+    {
+        var plan = ActivePlan();
+        _plans.Setup(r => r.GetByIdAsync(plan.Id)).ReturnsAsync(plan);
+        _prices.Setup(r => r.GetAllAsync()).ReturnsAsync(new[]
+        {
+            new PlanPrice { ServicePlanId = plan.Id, BillingCycle = "Yearly", IsActive = true, Price = 1990000 }
+        });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateService().CreateAsync(ValidCreateDto(plan.Id)));
+
+        _orders.Verify(r => r.AddAsync(It.IsAny<OrderRequest>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateAsync_NormalizesCustomerDataAndBillingCycle()
+    {
+        var plan = ActivePlan();
+        _plans.Setup(r => r.GetByIdAsync(plan.Id)).ReturnsAsync(plan);
+        _prices.Setup(r => r.GetAllAsync()).ReturnsAsync(new[]
+        {
+            new PlanPrice { ServicePlanId = plan.Id, BillingCycle = "Monthly", IsActive = true, Price = 199000 }
+        });
+
+        OrderRequest? captured = null;
+        _orders.Setup(r => r.AddAsync(It.IsAny<OrderRequest>()))
+            .Callback<OrderRequest>(entity => captured = entity)
+            .Returns(Task.CompletedTask);
+
+        await CreateService().CreateAsync(ValidCreateDto(plan.Id));
+
+        Assert.NotNull(captured);
+        Assert.Equal("Customer", captured!.CustomerName);
+        Assert.Equal("customer@example.com", captured.Email);
+        Assert.Equal("0900000000", captured.PhoneNumber);
+        Assert.Equal("Nova Test", captured.CompanyName);
+        Assert.Equal("Monthly", captured.BillingCycle);
+        Assert.Equal("Demo", captured.Note);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_NewToRejected_IsAllowedAndNotifiesCustomer()
+    {
+        var order = new OrderRequest
+        {
+            CustomerName = "Customer",
+            Email = "customer@example.com",
+            PhoneNumber = "0900000000",
+            BillingCycle = "Monthly",
+            Status = OrderStatus.New,
+            ServicePlanId = Guid.NewGuid(),
+            ReferenceCode = "ORD-20260821-ABC234"
+        };
+        _orders.Setup(r => r.GetByIdAsync(order.Id)).ReturnsAsync(order);
+
+        var result = await CreateService().UpdateStatusAsync(
+            order.Id,
+            new UpdateOrderStatusDto { Status = "Rejected" });
+
+        Assert.Equal("Rejected", result!.Status);
+        _notifications.Verify(n => n.CreateForUserByEmailAsync(
+            order.Email, It.IsAny<string>(), It.IsAny<string>(), "Order", "/account/requests"), Times.Once);
+        _emails.Verify(e => e.SendAsync(order.Email, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_SameStatus_DoesNotSendCustomerMessages()
+    {
+        var order = new OrderRequest
+        {
+            CustomerName = "Customer",
+            Email = "customer@example.com",
+            PhoneNumber = "0900000000",
+            BillingCycle = "Monthly",
+            Status = OrderStatus.Processing,
+            ServicePlanId = Guid.NewGuid()
+        };
+        _orders.Setup(r => r.GetByIdAsync(order.Id)).ReturnsAsync(order);
+
+        var result = await CreateService().UpdateStatusAsync(
+            order.Id,
+            new UpdateOrderStatusDto { Status = "processing" });
+
+        Assert.Equal("Processing", result!.Status);
+        _notifications.Verify(n => n.CreateForUserByEmailAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _emails.Verify(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_WithInvalidStatus_ThrowsArgumentException()
+    {
+        var order = new OrderRequest
+        {
+            CustomerName = "Customer",
+            Email = "customer@example.com",
+            PhoneNumber = "0900000000",
+            BillingCycle = "Monthly",
+            Status = OrderStatus.New,
+            ServicePlanId = Guid.NewGuid()
+        };
+        _orders.Setup(r => r.GetByIdAsync(order.Id)).ReturnsAsync(order);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => CreateService().UpdateStatusAsync(
+            order.Id,
+            new UpdateOrderStatusDto { Status = "Cancelled" }));
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_WhenOrderMissing_ReturnsNull()
+    {
+        var id = Guid.NewGuid();
+        _orders.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((OrderRequest?)null);
+
+        var result = await CreateService().UpdateStatusAsync(
+            id,
+            new UpdateOrderStatusDto { Status = "Processing" });
+
+        Assert.Null(result);
+        _unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetForManagementAsync_FiltersBySearchAndStatus()
+    {
+        var plan = ActivePlan();
+        var matching = new OrderRequest
+        {
+            CustomerName = "Nguyen Van An",
+            Email = "an@example.com",
+            PhoneNumber = "0900000001",
+            BillingCycle = "Monthly",
+            Status = OrderStatus.Processing,
+            ServicePlanId = plan.Id,
+            ReferenceCode = "ORD-20260822-AN1234",
+            CreatedAt = DateTime.UtcNow
+        };
+        var other = new OrderRequest
+        {
+            CustomerName = "Other Customer",
+            Email = "other@example.com",
+            PhoneNumber = "0900000002",
+            BillingCycle = "Yearly",
+            Status = OrderStatus.New,
+            ServicePlanId = plan.Id,
+            ReferenceCode = "ORD-20260822-OT1234",
+            CreatedAt = DateTime.UtcNow.AddMinutes(-1)
+        };
+        _orders.Setup(r => r.GetAllAsync()).ReturnsAsync(new[] { matching, other });
+        _plans.Setup(r => r.GetAllAsync()).ReturnsAsync(new[] { plan });
+
+        var result = await CreateService().GetForManagementAsync(
+            "an@example.com", "Processing", "latest", 1, 10);
+
+        var item = Assert.Single(result.Items);
+        Assert.Equal(matching.Id, item.Id);
+        Assert.Equal(1, result.TotalItems);
+    }
+
     private OrderRequestService CreateService() => new(
         _orders.Object,
         _plans.Object,
