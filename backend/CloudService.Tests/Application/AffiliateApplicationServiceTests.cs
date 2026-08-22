@@ -92,6 +92,90 @@ public class AffiliateApplicationServiceTests
             new UpdateAffiliateStatusDto { Status = "Processing" }));
     }
 
+
+    [Fact]
+    public async Task UpdateStatusAsync_NewToRejected_IsAllowed()
+    {
+        var application = ApplicationWithStatus("New");
+        _repository.Setup(r => r.GetByIdAsync(application.Id)).ReturnsAsync(application);
+
+        var result = await CreateService().UpdateStatusAsync(
+            application.Id,
+            new UpdateAffiliateStatusDto { Status = "Rejected" });
+
+        Assert.Equal("Rejected", result!.Status);
+        _notifications.Verify(n => n.CreateForUserByEmailAsync(
+            application.Email, It.IsAny<string>(), It.IsAny<string>(), "Affiliate", "/account/requests"), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_SameStatus_DoesNotNotifyCustomer()
+    {
+        var application = ApplicationWithStatus("Processing");
+        _repository.Setup(r => r.GetByIdAsync(application.Id)).ReturnsAsync(application);
+
+        var result = await CreateService().UpdateStatusAsync(
+            application.Id,
+            new UpdateAffiliateStatusDto { Status = " processing " });
+
+        Assert.Equal("Processing", result!.Status);
+        _notifications.Verify(n => n.CreateForUserByEmailAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _emails.Verify(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_WithInvalidStatus_ThrowsArgumentException()
+    {
+        var application = ApplicationWithStatus("New");
+        _repository.Setup(r => r.GetByIdAsync(application.Id)).ReturnsAsync(application);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => CreateService().UpdateStatusAsync(
+            application.Id,
+            new UpdateAffiliateStatusDto { Status = "Archived" }));
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_WhenApplicationMissing_ReturnsNull()
+    {
+        var id = Guid.NewGuid();
+        _repository.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((AffiliateApplication?)null);
+
+        var result = await CreateService().UpdateStatusAsync(
+            id,
+            new UpdateAffiliateStatusDto { Status = "Processing" });
+
+        Assert.Null(result);
+        _unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetForManagementAsync_FiltersByCompanyAndStatus()
+    {
+        var matching = ApplicationWithStatus("Processing");
+        matching.CompanyName = "Nova Partner";
+        matching.CreatedAt = DateTime.UtcNow;
+        var other = ApplicationWithStatus("New");
+        other.CompanyName = "Other Company";
+        other.Email = "other@example.com";
+        other.CreatedAt = DateTime.UtcNow.AddMinutes(-1);
+        _repository.Setup(r => r.GetAllAsync()).ReturnsAsync(new[] { matching, other });
+
+        var result = await CreateService().GetForManagementAsync(
+            "Nova Partner", "Processing", "latest", 1, 10);
+
+        var item = Assert.Single(result.Items);
+        Assert.Equal(matching.Id, item.Id);
+        Assert.Equal(1, result.TotalItems);
+    }
+
+    [Fact]
+    public async Task GetForManagementAsync_WithInvalidPageSize_ThrowsArgumentException()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            CreateService().GetForManagementAsync(null, null, "latest", 1, 101));
+    }
+
     private AffiliateApplicationService CreateService() => new(
         _repository.Object,
         _notifications.Object,

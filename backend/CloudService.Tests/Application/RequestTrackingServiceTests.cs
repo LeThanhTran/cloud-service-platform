@@ -140,6 +140,121 @@ public class RequestTrackingServiceTests
         _affiliates.Verify(r => r.GetAllAsync(), Times.Never);
     }
 
+
+    [Fact]
+    public async Task LookupAsync_OrderWithoutExistingPlan_UsesFallbackTitle()
+    {
+        var order = new OrderRequest
+        {
+            ReferenceCode = "ORD-20260822-NOPLAN",
+            Email = "customer@example.com",
+            CustomerName = "Customer",
+            PhoneNumber = "0900000000",
+            BillingCycle = "Monthly",
+            Status = OrderStatus.New,
+            ServicePlanId = Guid.NewGuid()
+        };
+        _orders.Setup(r => r.GetAllAsync()).ReturnsAsync(new[] { order });
+        _plans.Setup(r => r.GetByIdAsync(order.ServicePlanId)).ReturnsAsync((ServicePlan?)null);
+
+        var result = await CreateService().LookupAsync(new RequestTrackingLookupDto
+        {
+            ReferenceCode = order.ReferenceCode,
+            Email = order.Email
+        });
+
+        Assert.NotNull(result);
+        Assert.Equal("Yêu cầu dịch vụ NovaCloud", result!.Title);
+        Assert.Equal("Chu kỳ thanh toán: Theo tháng", result.Subtitle);
+    }
+
+    [Fact]
+    public async Task LookupAsync_YearlyOrder_ReturnsYearlySubtitle()
+    {
+        var plan = new ServicePlan { Name = "VPS Yearly" };
+        var order = new OrderRequest
+        {
+            ReferenceCode = "ORD-20260822-YEARLY",
+            Email = "yearly@example.com",
+            CustomerName = "Customer",
+            PhoneNumber = "0900000000",
+            BillingCycle = "Yearly",
+            Status = OrderStatus.Completed,
+            ServicePlanId = plan.Id
+        };
+        _orders.Setup(r => r.GetAllAsync()).ReturnsAsync(new[] { order });
+        _plans.Setup(r => r.GetByIdAsync(plan.Id)).ReturnsAsync(plan);
+
+        var result = await CreateService().LookupAsync(new RequestTrackingLookupDto
+        {
+            ReferenceCode = order.ReferenceCode,
+            Email = order.Email
+        });
+
+        Assert.Equal("Chu kỳ thanh toán: Theo năm", result!.Subtitle);
+    }
+
+    [Fact]
+    public async Task LookupAsync_AffiliateWithoutCompany_UsesProgramFallbackSubtitle()
+    {
+        var affiliate = new AffiliateApplication
+        {
+            ReferenceCode = "AFF-20260822-NOCOMP",
+            Email = "partner@example.com",
+            FullName = "Partner",
+            PhoneNumber = "0900000000",
+            CompanyName = null,
+            Status = "New"
+        };
+        _affiliates.Setup(r => r.GetAllAsync()).ReturnsAsync(new[] { affiliate });
+
+        var result = await CreateService().LookupAsync(new RequestTrackingLookupDto
+        {
+            ReferenceCode = affiliate.ReferenceCode,
+            Email = affiliate.Email
+        });
+
+        Assert.NotNull(result);
+        Assert.Equal("Chương trình Affiliate", result!.Subtitle);
+    }
+
+    [Fact]
+    public async Task LookupAsync_WithWrongAffiliateEmail_ReturnsNull()
+    {
+        var affiliate = new AffiliateApplication
+        {
+            ReferenceCode = "AFF-20260822-PRIVATE",
+            Email = "owner@example.com",
+            FullName = "Partner",
+            PhoneNumber = "0900000000",
+            Status = "Processing"
+        };
+        _affiliates.Setup(r => r.GetAllAsync()).ReturnsAsync(new[] { affiliate });
+
+        var result = await CreateService().LookupAsync(new RequestTrackingLookupDto
+        {
+            ReferenceCode = affiliate.ReferenceCode,
+            Email = "attacker@example.com"
+        });
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task LookupAsync_WithKnownPrefixButUnknownCode_ReturnsNull()
+    {
+        var result = await CreateService().LookupAsync(new RequestTrackingLookupDto
+        {
+            ReferenceCode = "ORD-20260822-NOTFOUND",
+            Email = "user@example.com"
+        });
+
+        Assert.Null(result);
+        _orders.Verify(r => r.GetAllAsync(), Times.Once);
+        _affiliates.Verify(r => r.GetAllAsync(), Times.Never);
+        _contacts.Verify(r => r.GetAllAsync(), Times.Never);
+    }
+
     private RequestTrackingService CreateService() => new(
         _orders.Object,
         _affiliates.Object,
