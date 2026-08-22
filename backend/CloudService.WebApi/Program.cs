@@ -321,11 +321,9 @@ if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
                 "Database migrations applied successfully on attempt {Attempt}.",
                 attempt);
 
-            // Development/Docker demo accounts.
-            // This is deliberately opt-in and never runs unless both the
-            // environment is Development and Database:SeedDemoUsers = true.
-            if (app.Environment.IsDevelopment() &&
-                builder.Configuration.GetValue<bool>("Database:SeedDemoUsers"))
+            // Demo accounts are seeded only when explicitly enabled.
+            // This allows controlled seeding in Development or Production.
+            if (builder.Configuration.GetValue<bool>("Database:SeedDemoUsers"))
             {
                 var passwordHasher =
                     scope.ServiceProvider.GetRequiredService<IPasswordHasher<AppUser>>();
