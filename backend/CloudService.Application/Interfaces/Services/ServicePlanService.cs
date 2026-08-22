@@ -1,4 +1,4 @@
-﻿using CloudService.Application.DTOs.ServicePlans;
+using CloudService.Application.DTOs.ServicePlans;
 using CloudService.Application.Interfaces.Repositories;
 using CloudService.Domain.Entities;
 
@@ -23,59 +23,24 @@ public class ServicePlanService : IServicePlanService
     public async Task<IEnumerable<ServicePlanDto>> GetAllAsync()
     {
         var list = await _repository.GetAllAsync();
-
-        return list.Select(p => new ServicePlanDto
-        {
-            Id = p.Id,
-            Name = p.Name,
-            Description = p.Description,
-            CpuCores = p.CpuCores,
-            RamGB = p.RamGB,
-            StorageGB = p.StorageGB,
-            BandwidthGB = p.BandwidthGB,
-            IsFeatured = p.IsFeatured,
-            IsActive = p.IsActive,
-            ServiceCategoryId = p.ServiceCategoryId
-        });
+        return list.Select(MapToDto);
     }
 
     public async Task<ServicePlanDto?> GetByIdAsync(Guid id)
     {
         var plan = await _repository.GetByIdAsync(id);
-
-        if (plan == null)
-            return null;
-
-        return new ServicePlanDto
-        {
-            Id = plan.Id,
-            Name = plan.Name,
-            Description = plan.Description,
-            CpuCores = plan.CpuCores,
-            RamGB = plan.RamGB,
-            StorageGB = plan.StorageGB,
-            BandwidthGB = plan.BandwidthGB,
-            IsFeatured = plan.IsFeatured,
-            IsActive = plan.IsActive,
-            ServiceCategoryId = plan.ServiceCategoryId
-        };
+        return plan == null ? null : MapToDto(plan);
     }
 
     public async Task<ServicePlanDto> CreateAsync(CreateServicePlanDto dto)
     {
-        if (dto.ServiceCategoryId == Guid.Empty)
-            throw new ArgumentException("ServiceCategoryId không hợp lệ.");
-
-        var serviceCategory =
-            await _serviceCategoryRepository.GetByIdAsync(dto.ServiceCategoryId);
-
-        if (serviceCategory == null)
-            throw new KeyNotFoundException("Không tìm thấy Service Category.");
+        ValidatePlan(dto.Name, dto.CpuCores, dto.RamGB, dto.StorageGB, dto.BandwidthGB);
+        await EnsureCategoryExistsAsync(dto.ServiceCategoryId);
 
         var entity = new ServicePlan
         {
-            Name = dto.Name,
-            Description = dto.Description,
+            Name = dto.Name.Trim(),
+            Description = NormalizeDescription(dto.Description),
             CpuCores = dto.CpuCores,
             RamGB = dto.RamGB,
             StorageGB = dto.StorageGB,
@@ -88,39 +53,20 @@ public class ServicePlanService : IServicePlanService
         await _repository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
 
-        return new ServicePlanDto
-        {
-            Id = entity.Id,
-            Name = entity.Name,
-            Description = entity.Description,
-            CpuCores = entity.CpuCores,
-            RamGB = entity.RamGB,
-            StorageGB = entity.StorageGB,
-            BandwidthGB = entity.BandwidthGB,
-            IsFeatured = entity.IsFeatured,
-            IsActive = entity.IsActive,
-            ServiceCategoryId = entity.ServiceCategoryId
-        };
+        return MapToDto(entity);
     }
 
     public async Task<bool> UpdateAsync(Guid id, UpdateServicePlanDto dto)
     {
         var entity = await _repository.GetByIdAsync(id);
-
         if (entity == null)
             return false;
 
-        if (dto.ServiceCategoryId == Guid.Empty)
-            throw new ArgumentException("ServiceCategoryId không hợp lệ.");
+        ValidatePlan(dto.Name, dto.CpuCores, dto.RamGB, dto.StorageGB, dto.BandwidthGB);
+        await EnsureCategoryExistsAsync(dto.ServiceCategoryId);
 
-        var serviceCategory =
-            await _serviceCategoryRepository.GetByIdAsync(dto.ServiceCategoryId);
-
-        if (serviceCategory == null)
-            throw new KeyNotFoundException("Không tìm thấy Service Category.");
-
-        entity.Name = dto.Name;
-        entity.Description = dto.Description;
+        entity.Name = dto.Name.Trim();
+        entity.Description = NormalizeDescription(dto.Description);
         entity.CpuCores = dto.CpuCores;
         entity.RamGB = dto.RamGB;
         entity.StorageGB = dto.StorageGB;
@@ -130,19 +76,52 @@ public class ServicePlanService : IServicePlanService
         entity.ServiceCategoryId = dto.ServiceCategoryId;
 
         _repository.Update(entity);
-
         return await _unitOfWork.SaveChangesAsync() > 0;
     }
 
     public async Task<bool> DeleteAsync(Guid id)
     {
         var entity = await _repository.GetByIdAsync(id);
-
         if (entity == null)
             return false;
 
         _repository.Delete(entity);
-
         return await _unitOfWork.SaveChangesAsync() > 0;
     }
+
+    private async Task EnsureCategoryExistsAsync(Guid categoryId)
+    {
+        if (categoryId == Guid.Empty)
+            throw new ArgumentException("ServiceCategoryId không hợp lệ.");
+
+        var category = await _serviceCategoryRepository.GetByIdAsync(categoryId);
+        if (category == null)
+            throw new KeyNotFoundException("Không tìm thấy Service Category.");
+    }
+
+    private static void ValidatePlan(string? name, int cpuCores, int ramGB, int storageGB, int bandwidthGB)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Tên gói dịch vụ không được để trống.");
+
+        if (cpuCores <= 0 || ramGB <= 0 || storageGB <= 0 || bandwidthGB <= 0)
+            throw new ArgumentException("CPU, RAM, Storage và Bandwidth phải lớn hơn 0.");
+    }
+
+    private static string? NormalizeDescription(string? description)
+        => string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+
+    private static ServicePlanDto MapToDto(ServicePlan plan) => new()
+    {
+        Id = plan.Id,
+        Name = plan.Name,
+        Description = plan.Description,
+        CpuCores = plan.CpuCores,
+        RamGB = plan.RamGB,
+        StorageGB = plan.StorageGB,
+        BandwidthGB = plan.BandwidthGB,
+        IsFeatured = plan.IsFeatured,
+        IsActive = plan.IsActive,
+        ServiceCategoryId = plan.ServiceCategoryId
+    };
 }

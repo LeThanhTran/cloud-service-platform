@@ -111,6 +111,78 @@ public class PromotionServiceTests
         _unitOfWork.Verify(unit => unit.SaveChangesAsync(), Times.Never);
     }
 
+
+    [Fact]
+    public async Task UpdateAsync_EndBeforeStart_IsRejected()
+    {
+        var promotion = new Promotion { Name = "Sale", ServicePlanId = Guid.NewGuid() };
+        _promotions.Setup(repository => repository.GetByIdAsync(promotion.Id)).ReturnsAsync(promotion);
+        var start = DateTime.UtcNow;
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            CreateService().UpdateAsync(promotion.Id, new UpdatePromotionDto
+            {
+                Name = "Invalid",
+                ServicePlanId = Guid.NewGuid(),
+                DiscountPercent = 10,
+                StartDate = start,
+                EndDate = start,
+                IsActive = true
+            }));
+
+        _promotions.Verify(repository => repository.Update(It.IsAny<Promotion>()), Times.Never);
+        _unitOfWork.Verify(unit => unit.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ValidPromotion_UpdatesAndSaves()
+    {
+        var plan = new ServicePlan { Name = "Hosting Pro" };
+        var promotion = new Promotion
+        {
+            Name = "Old Sale",
+            ServicePlanId = plan.Id,
+            DiscountPercent = 5,
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            EndDate = DateTime.UtcNow.AddDays(1),
+            IsActive = true
+        };
+        _promotions.Setup(repository => repository.GetByIdAsync(promotion.Id)).ReturnsAsync(promotion);
+        _plans.Setup(repository => repository.GetByIdAsync(plan.Id)).ReturnsAsync(plan);
+        var start = DateTime.UtcNow;
+
+        var result = await CreateService().UpdateAsync(promotion.Id, new UpdatePromotionDto
+        {
+            Name = "Summer Sale",
+            Description = "20% off",
+            ServicePlanId = plan.Id,
+            DiscountPercent = 20,
+            StartDate = start,
+            EndDate = start.AddDays(7),
+            IsActive = false
+        });
+
+        Assert.True(result);
+        Assert.Equal("Summer Sale", promotion.Name);
+        Assert.Equal(20, promotion.DiscountPercent);
+        Assert.False(promotion.IsActive);
+        _promotions.Verify(repository => repository.Update(promotion), Times.Once);
+        _unitOfWork.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ExistingPromotion_DeletesAndSaves()
+    {
+        var promotion = new Promotion { Name = "Sale", ServicePlanId = Guid.NewGuid() };
+        _promotions.Setup(repository => repository.GetByIdAsync(promotion.Id)).ReturnsAsync(promotion);
+
+        var result = await CreateService().DeleteAsync(promotion.Id);
+
+        Assert.True(result);
+        _promotions.Verify(repository => repository.Delete(promotion), Times.Once);
+        _unitOfWork.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+    }
+
     private PromotionService CreateService() => new(
         _promotions.Object,
         _plans.Object,
