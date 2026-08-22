@@ -103,7 +103,7 @@ export default function AdminLoginPage() {
       router.refresh();
     } catch {
       setError(
-        "Không thể kết nối tới Web API. Hãy kiểm tra backend đang chạy tại localhost:5128.",
+        "Không thể kết nối tới Web API. Vui lòng kiểm tra kết nối mạng hoặc trạng thái máy chủ.",
       );
     } finally {
       setLoading(false);
