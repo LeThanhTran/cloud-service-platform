@@ -1,31 +1,57 @@
 # NovaCloud Application Tests
 
-Checkpoint: `feature/application-tests`
+## Test Stack
 
-## Phạm vi
-- xUnit + Moq
-- 29 test ở tầng Application/Utility
-- Không cần database thật
-- Không gọi Gmail thật
-- Không gọi Notification thật
+- xUnit
+- Moq
+- Coverlet Collector
 
-## Nhóm test
-- `ServiceCategoryServiceTests`: CRUD/mapping
-- `OrderRequestServiceTests`: tạo đơn, validation, workflow trạng thái, notification/email
-- `ContactRequestServiceTests`: tạo liên hệ, workflow, pagination 10 dòng/trang
-- `AffiliateApplicationServiceTests`: tạo hồ sơ + workflow
-- `RequestTrackingServiceTests`: tra cứu code + email và chống tra cứu sai email
-- `ReferenceCodeGeneratorTests`: format/reference-code fallback/normalize
+## Current Test Suite
 
-## Chạy test
+Current checkpoint: **71 tests**.
+
+Test groups:
+
+- `ServiceCategoryServiceTests`
+- `OrderRequestServiceTests`
+- `ContactRequestServiceTests`
+- `AffiliateApplicationServiceTests`
+- `RequestTrackingServiceTests`
+- `CustomerAccountServiceTests`
+- `UserManagementServiceTests`
+- `AuthServiceTests`
+- `NotificationServiceTests`
+- `PlanPriceServiceTests`
+- `PromotionServiceTests`
+- `ReferenceCodeGeneratorTests`
+
+The tests focus mainly on Application/utility logic and use mocks so they do not require production SQL Server, Gmail SMTP or live notification delivery.
+
+## Run Tests
+
 ```powershell
 dotnet restore CloudService.slnx
 dotnet test CloudService.slnx
 ```
 
+Expected result:
+
+```text
+total: 71
+failed: 0
+succeeded: 71
+```
+
 ## Coverage
-Project đã có `coverlet.collector`, có thể chạy:
+
 ```powershell
 dotnet test CloudService.slnx --collect:"XPlat Code Coverage"
 ```
-Kết quả coverage sẽ nằm trong `backend/CloudService.Tests/TestResults/.../coverage.cobertura.xml`.
+
+Coverage output:
+
+```text
+backend/CloudService.Tests/TestResults/.../coverage.cobertura.xml
+```
+
+`TestResults` is generated output and should not be committed.
