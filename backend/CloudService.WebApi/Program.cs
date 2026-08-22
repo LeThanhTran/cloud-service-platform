@@ -15,6 +15,7 @@ using CloudService.WebApi.Services.QrCodes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -26,6 +27,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+// Reverse proxy (Nginx) forwards the original client IP and scheme.
+// The API is not published directly in production, so these headers only
+// arrive through the trusted Docker network proxy. This also keeps
+// IP-based rate limiting meaningful after deployment.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // CORS cho phép frontend Next.js gọi Web API từ trình duyệt.
 var frontendBaseUrl =
@@ -269,13 +283,31 @@ var app = builder.Build();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() ||
+    builder.Configuration.GetValue<bool>("Swagger:Enabled"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Must run before middleware that reads client IP or request scheme.
+// Local development does not trust forwarded headers unless explicitly enabled.
+if (builder.Configuration.GetValue<bool>("ReverseProxy:Enabled"))
+{
+    app.UseForwardedHeaders();
+}
+
+// HTTPS is terminated by the reverse proxy in cloud deployment.
+// Keep the existing local-development behavior while avoiding redirect
+// loops/warnings inside the production HTTP-only container network.
+var useHttpsRedirection = builder.Configuration.GetValue(
+    "Security:UseHttpsRedirection",
+    app.Environment.IsDevelopment());
+
+if (useHttpsRedirection)
+{
+    app.UseHttpsRedirection();
+}
 
 // Phục vụ ảnh News đã upload từ wwwroot/uploads/news.
 app.UseStaticFiles();
@@ -321,10 +353,17 @@ if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
                 "Database migrations applied successfully on attempt {Attempt}.",
                 attempt);
 
-            // Demo accounts are seeded only when explicitly enabled.
-            // This allows controlled seeding in Development or Production.
+            // Demo accounts are always opt-in. Production deployment may
+            // explicitly enable them for the university demonstration using a
+            // strong private password supplied through environment variables.
             if (builder.Configuration.GetValue<bool>("Database:SeedDemoUsers"))
             {
+                if (!app.Environment.IsDevelopment())
+                {
+                    app.Logger.LogWarning(
+                        "Demo-user seeding is enabled outside Development. " +
+                        "Use only for the controlled NovaCloud coursework demo.");
+                }
                 var passwordHasher =
                     scope.ServiceProvider.GetRequiredService<IPasswordHasher<AppUser>>();
 
