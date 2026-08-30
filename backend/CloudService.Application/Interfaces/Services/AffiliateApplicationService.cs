@@ -54,6 +54,13 @@ public class AffiliateApplicationService : IAffiliateApplicationService
             "Affiliate",
             "/admin/affiliates");
 
+        await _emailSender.SendAsync(
+            entity.Email,
+            "[NovaCloud] Đã tiếp nhận hồ sơ Affiliate",
+            EmailTemplates.AffiliateReceived(
+                entity.FullName,
+                ReferenceCodeGenerator.GetDisplayCode("AFF", entity.ReferenceCode, entity.CreatedAt, entity.Id)));
+
         return Map(entity);
     }
 

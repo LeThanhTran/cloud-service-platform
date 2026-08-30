@@ -81,6 +81,15 @@ public class OrderRequestService : IOrderRequestService
             "Order",
             "/admin/orders");
 
+        await _emailSender.SendAsync(
+            entity.Email,
+            "[NovaCloud] Đã tiếp nhận yêu cầu dịch vụ",
+            EmailTemplates.OrderCreated(
+                entity.CustomerName,
+                ReferenceCodeGenerator.GetDisplayCode("ORD", entity.ReferenceCode, entity.CreatedAt, entity.Id),
+                plan.Name,
+                entity.BillingCycle));
+
         return Map(entity, plan.Name);
     }
 
