@@ -53,6 +53,14 @@ public class ContactRequestService : IContactRequestService
             "Contact",
             "/admin/contacts");
 
+        await _emailSender.SendAsync(
+            entity.Email,
+            "[NovaCloud] Đã tiếp nhận liên hệ",
+            EmailTemplates.ContactReceived(
+                entity.FullName,
+                ReferenceCodeGenerator.GetDisplayCode("CON", entity.ReferenceCode, entity.CreatedAt, entity.Id),
+                entity.Subject));
+
         return Map(entity);
     }
 

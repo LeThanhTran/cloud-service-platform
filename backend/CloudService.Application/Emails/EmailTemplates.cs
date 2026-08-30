@@ -4,6 +4,54 @@ namespace CloudService.Application.Emails;
 
 public static class EmailTemplates
 {
+    public static string OrderCreated(
+        string customerName,
+        string referenceCode,
+        string servicePlanName,
+        string billingCycle) =>
+        BuildLayout(
+            "NovaCloud đã tiếp nhận yêu cầu dịch vụ",
+            customerName,
+            "Yêu cầu đăng ký dịch vụ của bạn đã được tiếp nhận thành công. Đội ngũ NovaCloud sẽ kiểm tra và cập nhật trạng thái trong thời gian sớm nhất.",
+            new[]
+            {
+                ("Mã yêu cầu", referenceCode),
+                ("Dịch vụ", servicePlanName),
+                ("Chu kỳ", BillingCycleLabel(billingCycle)),
+                ("Trạng thái", "Mới")
+            },
+            "Vui lòng lưu mã yêu cầu để thuận tiện khi tra cứu hoặc liên hệ hỗ trợ.");
+
+    public static string ContactReceived(
+        string fullName,
+        string referenceCode,
+        string subject) =>
+        BuildLayout(
+            "NovaCloud đã tiếp nhận liên hệ",
+            fullName,
+            "Nội dung liên hệ của bạn đã được gửi thành công. Đội ngũ NovaCloud sẽ phản hồi trong thời gian sớm nhất.",
+            new[]
+            {
+                ("Mã liên hệ", referenceCode),
+                ("Chủ đề", subject),
+                ("Trạng thái", "Mới")
+            },
+            "Vui lòng lưu mã liên hệ để thuận tiện khi cần trao đổi thêm với NovaCloud.");
+
+    public static string AffiliateReceived(
+        string fullName,
+        string referenceCode) =>
+        BuildLayout(
+            "NovaCloud đã tiếp nhận hồ sơ Affiliate",
+            fullName,
+            "Hồ sơ đăng ký đối tác/Affiliate của bạn đã được tiếp nhận. Đội ngũ NovaCloud sẽ xem xét và cập nhật trạng thái trong thời gian sớm nhất.",
+            new[]
+            {
+                ("Mã hồ sơ", referenceCode),
+                ("Trạng thái", "Mới")
+            },
+            "Vui lòng lưu mã hồ sơ để thuận tiện khi tra cứu hoặc liên hệ hỗ trợ.");
+
     public static string OrderStatus(
         string customerName,
         string referenceCode,
